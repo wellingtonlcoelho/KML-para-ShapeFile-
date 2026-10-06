@@ -24,6 +24,22 @@
     --line: #C9BB98;
     --shadow: rgba(46,42,34,0.18);
   }
+  
+  body.dark-mode {
+    --paper: #1a1a1a;
+    --paper-dark: #0d0d0d;
+    --ink: #e0e0e0;
+    --ink-soft: #b0b0b0;
+    --contour: #4a5a6a;
+    --brass: #5a8fbd;
+    --red: #ff6b6b;
+    --teal: #4ecdc4;
+    --green: #51cf66;
+    --line: #2a3a4a;
+    --shadow: rgba(0,0,0,0.5);
+    background-color: #1a1a1a !important;
+  }
+  
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -33,17 +49,21 @@
     min-height:100vh;
     position:relative;
     overflow-x:hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+  
   /* contour-line background signature */
   .contours{
     position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.55;
   }
+  
   .wrap{
     position:relative; z-index:1;
     max-width:760px;
     margin:0 auto;
     padding:56px 28px 80px;
   }
+  
   header{
     display:flex; justify-content:space-between; align-items:flex-start;
     border-bottom:2px solid var(--ink);
@@ -51,6 +71,39 @@
     margin-bottom:8px;
     gap:20px;
   }
+  
+  .header-left{
+    display:flex; align-items:flex-start; gap:16px;
+  }
+  
+  .logo-container{
+    flex-shrink:0;
+  }
+  
+  .logo{
+    width:60px;
+    height:60px;
+    background: linear-gradient(135deg, var(--brass), var(--teal));
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    color:var(--paper);
+    font-size:24px;
+    font-family:'Fraunces', serif;
+    box-shadow: 0 4px 12px var(--shadow);
+    transition: transform 0.3s ease;
+  }
+  
+  .logo:hover{
+    transform:scale(1.05);
+  }
+  
+  .header-content{
+    flex:1;
+  }
+  
   h1{
     font-family:'Fraunces', serif;
     font-size:2.5rem;
@@ -66,12 +119,18 @@
     margin-top:8px;
     max-width:38ch;
   }
+  
+  .header-right{
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  
   .titleblock{
     border:1.5px solid var(--ink);
     font-family:'IBM Plex Mono', monospace;
     font-size:0.68rem;
     flex-shrink:0;
     min-width:150px;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
   }
   .titleblock .row{
     display:flex; justify-content:space-between; gap:10px;
@@ -81,6 +140,29 @@
   .titleblock .row:last-child{border-bottom:none;}
   .titleblock .label{color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em;}
   .titleblock .val{font-weight:600;}
+  
+  .theme-toggle{
+    padding:8px 12px;
+    background:var(--line);
+    border:1.5px solid var(--ink);
+    color:var(--ink);
+    cursor:pointer;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75rem;
+    font-weight:600;
+    transition:background 0.15s ease, transform 0.1s ease;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  
+  .theme-toggle:hover{
+    background:var(--brass);
+    color:var(--paper);
+  }
+  
+  .theme-toggle:active{
+    transform:translateY(1px);
+  }
 
   main{margin-top:36px;}
 
@@ -93,6 +175,11 @@
     transition:border-color .15s ease, background .15s ease;
     background: rgba(255,255,255,0.15);
   }
+  
+  body.dark-mode .dropzone{
+    background: rgba(90,143,189,0.1);
+  }
+  
   .dropzone::before, .dropzone::after,
   .dropzone .c2::before, .dropzone .c2::after{
     content:''; position:absolute; width:14px; height:14px;
@@ -208,8 +295,11 @@
 
   @media (max-width:520px){
     header{flex-direction:column;}
+    .header-left{flex-direction:column;}
+    .header-right{flex-direction:column; width:100%;}
     h1{font-size:1.9rem;}
     .titleblock{width:100%;}
+    .theme-toggle{width:100%;}
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -232,15 +322,23 @@
 
 <div class="wrap">
   <header>
-    <div>
-      <h1>KML<span class="arrow"> → </span>SHP</h1>
-      <div class="subtitle">Converte arquivos KML em Shapefile (.shp/.shx/.dbf/.prj) direto no navegador — nada é enviado a um servidor.</div>
+    <div class="header-left">
+      <div class="logo-container">
+        <div class="logo" title="KML to Shapefile Converter">🗺️</div>
+      </div>
+      <div class="header-content">
+        <h1>KML<span class="arrow"> → </span>SHP</h1>
+        <div class="subtitle">Converte arquivos KML em Shapefile (.shp/.shx/.dbf/.prj) direto no navegador — nada é enviado a um servidor.</div>
+      </div>
     </div>
-    <div class="titleblock">
-      <div class="row"><span class="label">Entrada</span><span class="val">.KML</span></div>
-      <div class="row"><span class="label">Saída</span><span class="val">.ZIP</span></div>
-      <div class="row"><span class="label">Datum</span><span class="val">WGS84</span></div>
-      <div class="row"><span class="label">Local</span><span class="val">browser</span></div>
+    <div class="header-right">
+      <div class="titleblock">
+        <div class="row"><span class="label">Entrada</span><span class="val">.KML</span></div>
+        <div class="row"><span class="label">Saída</span><span class="val">.ZIP</span></div>
+        <div class="row"><span class="label">Datum</span><span class="val">WGS84</span></div>
+        <div class="row"><span class="label">Local</span><span class="val">browser</span></div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" title="Alternar modo noturno">🌙 Escuro</button>
     </div>
   </header>
 
@@ -271,7 +369,7 @@
 
     <button id="convertBtn">Gerar Shapefile (.zip)</button>
 
-    <div class="note">Camadas separadas por tipo de geometria (pontos, linhas, polígonos) são geradas como shapefiles distintos dentro do .zip, seguindo a limitação do formato Shapefile de um único tipo de geometria por arquivo. Campos de texto são limitados a 254 caracteres (limite clássico do formato .dbf).</div>
+    <div class="note">Camadas separadas por tipo de geometria (pontos, linhas, polígonos) são geradas como shapefiles distintos dentro do .zip, seguindo a limitação do formato Shapefile de um tipo de geometria por arquivo. MultiPolígonos são suportados e convertidos corretamente.</div>
   </main>
 
   <footer>
@@ -282,6 +380,25 @@
 
 <script>
 (function(){
+  // =========== THEME TOGGLE ===========
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+  
+  // Carregar tema salvo
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  if (savedTheme === 'dark') {
+    body.classList.add('dark-mode');
+    themeToggle.textContent = '☀️ Claro';
+  }
+  
+  themeToggle.addEventListener('click', () => {
+    body.classList.toggle('dark-mode');
+    const isDark = body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    themeToggle.textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
+  });
+  
+  // =========== KML CONVERTER ===========
   const dz = document.getElementById('dropzone');
   const fileInput = document.getElementById('fileInput');
   const statusEl = document.getElementById('status');
