@@ -48,7 +48,6 @@
     color: #1e293b;
   }
 
-  /* ============= NAVBAR ============= */
   nav {
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(10px);
@@ -77,15 +76,17 @@
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    background: linear-gradient(135deg, #e0f2fe, #67e8f9);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .nav-logo svg {
-    width: 32px;
-    height: 32px;
+    width: 42px;
+    height: 42px;
+    display: block;
+    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
   }
 
   .nav-controls {
@@ -123,14 +124,12 @@
     color: #1e293b;
   }
 
-  /* ============= MAIN CONTAINER ============= */
   .container {
     max-width: 1000px;
     margin: 0 auto;
     padding: 3rem 1.5rem;
   }
 
-  /* ============= HEADER SECTION ============= */
   .header {
     margin-bottom: 3rem;
   }
@@ -202,7 +201,6 @@
     font-weight: 700;
   }
 
-  /* ============= UPLOAD ZONE ============= */
   .upload-section {
     background: linear-gradient(135deg, rgba(71, 85, 105, 0.1), rgba(30, 58, 138, 0.1));
     border: 2px dashed var(--primary-light);
@@ -266,7 +264,6 @@
     display: none;
   }
 
-  /* ============= STATUS ============= */
   .status-message {
     margin-top: 1.5rem;
     font-family: 'JetBrains Mono', monospace;
@@ -296,7 +293,6 @@
     color: #059669;
   }
 
-  /* ============= MAP SECTION ============= */
   .map-section {
     margin-top: 2rem;
     display: none;
@@ -372,7 +368,6 @@
     color: #1e293b !important;
   }
 
-  /* ============= LEGEND ============= */
   .legend-section {
     margin-top: 2rem;
     display: none;
@@ -471,7 +466,6 @@
     color: #64748b;
   }
 
-  /* ============= GEOMETRY OPTIONS ============= */
   .geometry-options {
     margin-top: 2rem;
     background: rgba(71, 85, 105, 0.1);
@@ -542,7 +536,6 @@
     color: white;
   }
 
-  /* ============= CONVERT BUTTON ============= */
   .action-section {
     margin-top: 2rem;
     display: flex;
@@ -586,7 +579,6 @@
     cursor: not-allowed;
   }
 
-  /* ============= FOOTER ============= */
   .footer {
     margin-top: 3rem;
     padding-top: 2rem;
@@ -601,7 +593,6 @@
     color: #64748b;
   }
 
-  /* ============= RESPONSIVE ============= */
   @media (max-width: 768px) {
     .container {
       padding: 1.5rem 1rem;
@@ -640,11 +631,20 @@
 </head>
 <body>
 
-<!-- NAVBAR -->
 <nav>
   <div class="nav-logo">
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-label="Mapzer icon">
+      <defs>
+        <linearGradient id="pBlue" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0%" stop-color="#67d9ff"/>
+          <stop offset="100%" stop-color="#1ab5ec"/>
+        </linearGradient>
+      </defs>
+      <g>
+        <path d="M7 7H41C38.4 7 7 7 7 7V41C7 41 38.4 41 41 41H7V7Z" fill="url(#pBlue)" opacity="0.12"/>
+        <path d="M8 7.5C8 4.85 10.05 2.8 12.7 2.8H35.3C37.95 2.8 40 4.85 40 7.5V40.5C40 43.15 37.95 45.2 35.3 45.2H12.7C10.05 45.2 8 43.15 8 40.5V7.5Z" fill="url(#pBlue)"/>
+        <path d="M17 12H25.5C32.4 12 37.5 17.2 37.5 24.1C37.5 30.9 32.4 36.1 25.5 36.1H17V12ZM23.5 17.4V30.7H25.5C29.3 30.7 32.3 27.7 32.3 24.1C32.3 20.4 29.3 17.4 25.5 17.4H23.5Z" fill="#02070a"/>
+      </g>
     </svg>
     Mapzer
   </div>
@@ -653,7 +653,6 @@
   </div>
 </nav>
 
-<!-- MAIN CONTAINER -->
 <div class="container">
   <div class="header">
     <div class="header-content">
@@ -669,7 +668,6 @@
     </div>
   </div>
 
-  <!-- UPLOAD ZONE -->
   <div class="upload-section" id="uploadZone">
     <div class="upload-icon">📁</div>
     <div class="upload-text">
@@ -681,7 +679,6 @@
 
   <div class="status-message" id="statusMessage"></div>
 
-  <!-- MAP SECTION -->
   <div class="map-section" id="mapSection">
     <div class="map-header">
       <div class="map-title">📍 Pré-visualização do Mapa</div>
@@ -690,31 +687,23 @@
     <div id="mapPreview"></div>
   </div>
 
-  <!-- LEGEND -->
   <div class="legend-section" id="legendSection">
     <div class="legend-title">Geometrias Detectadas</div>
     <div class="legend-items" id="legendItems"></div>
   </div>
 
-  <!-- GEOMETRY OPTIONS -->
   <div class="geometry-options" id="geometryOptions">
     <div class="geometry-title">Opções de Conversão</div>
     <div class="geometry-toggle">
-      <button class="geo-option active" data-mode="polygon">
-        🔷 Polígonos Simples
-      </button>
-      <button class="geo-option" data-mode="multipolygon">
-        🔶 MultiPolígonos
-      </button>
+      <button class="geo-option active" data-mode="polygon">🔷 Polígonos Simples</button>
+      <button class="geo-option" data-mode="multipolygon">🔶 MultiPolígonos</button>
     </div>
   </div>
 
-  <!-- CONVERT BUTTON -->
   <div class="action-section">
     <button class="btn btn-primary show" id="convertBtn">🚀 Gerar Shapefile (.zip)</button>
   </div>
 
-  <!-- FOOTER -->
   <div class="footer">
     <p>Mapzer © 2024 • Conversor Local • Dados não são enviados para servidores</p>
   </div>
@@ -722,10 +711,8 @@
 
 <script>
 (function(){
-  // =============== THEME TOGGLE ===============
   const themeToggle = document.getElementById('themeToggle');
   const body = document.body;
-  
   const savedTheme = localStorage.getItem('mapzer-theme') || 'dark';
   if (savedTheme === 'light') {
     body.classList.add('light-mode');
@@ -733,7 +720,7 @@
   } else {
     themeToggle.textContent = '☀️ Claro';
   }
-  
+
   themeToggle.addEventListener('click', () => {
     body.classList.toggle('light-mode');
     const isDark = !body.classList.contains('light-mode');
@@ -741,10 +728,8 @@
     themeToggle.textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
   });
 
-  // =============== GEOMETRY MODE ===============
-  let geometryMode = 'polygon'; // polygon ou multipolygon
+  let geometryMode = 'polygon';
   const geoOptions = document.querySelectorAll('.geo-option');
-  
   geoOptions.forEach(btn => {
     btn.addEventListener('click', () => {
       geoOptions.forEach(b => b.classList.remove('active'));
@@ -753,7 +738,6 @@
     });
   });
 
-  // =============== FILE UPLOAD & MAP ===============
   const uploadZone = document.getElementById('uploadZone');
   const fileInput = document.getElementById('fileInput');
   const statusMessage = document.getElementById('statusMessage');
@@ -765,7 +749,7 @@
   const uploadSubtitle = document.getElementById('uploadSubtitle');
   const mapExtent = document.getElementById('mapExtent');
   const legendItems = document.getElementById('legendItems');
-  
+
   let leafletMap = null;
   let geoJsonLayer = null;
   let currentGeoJSON = null;
@@ -794,7 +778,6 @@
     uploadZone.classList.remove('drag-active');
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
-
   fileInput.addEventListener('change', (e) => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
   });
@@ -804,12 +787,12 @@
       showStatus('❌ Erro: selecione um arquivo .kml', true);
       return;
     }
-    
+
     currentBaseName = file.name.replace(/\.kml$/i, '') || 'shapefile';
     uploadTitle.textContent = file.name;
     uploadSubtitle.textContent = 'clique para trocar o arquivo';
     showStatus('📖 Lendo arquivo...');
-    
+
     legendSection.classList.remove('show');
     geometryOptions.classList.remove('show');
     mapSection.classList.remove('show');
@@ -858,7 +841,7 @@
 
     legendItems.innerHTML = '';
     const keys = Object.keys(counts);
-    
+
     if (keys.length === 0) {
       showStatus('❌ Nenhuma geometria suportada encontrada', true);
       return;
@@ -895,15 +878,14 @@
 
   function showMap(geojson) {
     mapSection.classList.add('show');
-    
+
     if (!leafletMap) {
       leafletMap = L.map('mapPreview', {
         scrollWheelZoom: true,
         attributionControl: false,
         zoomControl: true
       });
-      
-      // Layer com cores azuis escuras
+
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19
       }).addTo(leafletMap);
@@ -948,7 +930,7 @@
     convertBtn.disabled = true;
     convertBtn.textContent = '⏳ Convertendo...';
     showStatus('🔄 Gerando shapefiles...');
-    
+
     try {
       await convert(currentGeoJSON, currentBaseName, geometryMode);
       showStatus(`✓ Download iniciado: ${currentBaseName}.zip`);
@@ -960,7 +942,6 @@
     }
   });
 
-  // =============== SHAPEFILE GENERATION ===============
   const SHP_POINT = 1, SHP_POLYLINE = 3, SHP_POLYGON = 5, SHP_MULTIPOINT = 8;
 
   function ringSignedArea(ring) {
@@ -1095,7 +1076,7 @@
       const shxBuf = new ArrayBuffer(100 + 8 * this.records.length);
       const shpDv = new DataView(shpBuf);
       const shxDv = new DataView(shxBuf);
-      
+
       const writeHeader = (dv, fileLenWords) => {
         dv.setInt32(0, 9994, false);
         for (let i = 4; i <= 20; i += 4) dv.setInt32(i, 0, false);
@@ -1232,7 +1213,7 @@
   async function convert(geojson, baseName, mode) {
     const feats = expandFeatures(geojson.features);
     const groups = { point: [], multipoint: [], line: [], polygon: [] };
-    
+
     for (const f of feats) {
       const t = f.geometry.type;
       if (t === 'Point') groups.point.push(f);
@@ -1287,15 +1268,13 @@
     if (groups.polygon.length) {
       anyLayer = true;
       const w = new ShapeWriter(SHP_POLYGON);
-      
+
       if (mode === 'multipolygon') {
-        // Mantem MultiPolygonos como MultiPolygonos
         for (const f of groups.polygon) {
           const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
           w.addPolygon(polys);
         }
       } else {
-        // Converte MultiPolygonos em polígonos simples
         for (const f of groups.polygon) {
           if (f.geometry.type === 'MultiPolygon') {
             for (const poly of f.geometry.coordinates) {
