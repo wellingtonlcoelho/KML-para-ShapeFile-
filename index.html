@@ -48,6 +48,7 @@
     color: #1e293b;
   }
 
+  /* ============= NAVBAR ============= */
   nav {
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(10px);
@@ -66,27 +67,50 @@
   body.light-mode nav {
     background: rgba(248, 250, 252, 0.95);
     border-bottom-color: rgba(226, 232, 240, 0.5);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   }
 
   .nav-logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 1.5rem;
+    gap: 1rem;
+    text-decoration: none;
+  }
+
+  .nav-logo-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #38bdf8, #0891b2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: white;
+    font-size: 28px;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .nav-logo-icon:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5);
+  }
+
+  .nav-logo-text {
+    font-size: 1.4rem;
     font-weight: 700;
     letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #e0f2fe, #67e8f9);
+    background: linear-gradient(135deg, #38bdf8, #06b6d4);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .nav-logo svg {
-    width: 42px;
-    height: 42px;
-    display: block;
-    filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
+  body.light-mode .nav-logo-text {
+    background: linear-gradient(135deg, #0891b2, #0369a1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   .nav-controls {
@@ -99,7 +123,7 @@
     background: var(--dark-surface);
     border: 1px solid var(--border-color);
     color: var(--light-text);
-    padding: 0.6rem 1rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 8px;
     cursor: pointer;
     font-family: 'Poppins', sans-serif;
@@ -124,87 +148,60 @@
     color: #1e293b;
   }
 
-  .container {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 3rem 1.5rem;
-  }
-
-  .header {
-    margin-bottom: 3rem;
-  }
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+  /* ============= MAIN LAYOUT ============= */
+  .main-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 320px;
     gap: 2rem;
-    margin-bottom: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
   }
 
-  .header-text h1 {
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  /* ============= HEADER ============= */
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header h1 {
     font-size: 2.5rem;
     font-weight: 700;
-    margin-bottom: 0.5rem;
-    letter-spacing: -1px;
     background: linear-gradient(135deg, var(--primary-light), var(--accent));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  body.light-mode .header-text h1 {
+  body.light-mode .header h1 {
     background: linear-gradient(135deg, #1e40af, #0891b2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 
-  .header-text p {
+  .header p {
     font-size: 0.95rem;
     color: var(--muted-text);
-    line-height: 1.6;
     max-width: 500px;
   }
 
-  body.light-mode .header-text p {
+  body.light-mode .header p {
     color: #64748b;
   }
 
-  .header-features {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .feature-badge {
-    background: rgba(71, 85, 105, 0.2);
-    border: 1px solid var(--border-color);
-    padding: 0.75rem 1.25rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  body.light-mode .feature-badge {
-    background: rgba(226, 232, 240, 0.5);
-    border-color: #cbd5e1;
-    color: #1e293b;
-  }
-
-  .feature-badge::before {
-    content: '✓';
-    color: var(--success);
-    font-weight: 700;
-  }
-
+  /* ============= UPLOAD ZONE ============= */
   .upload-section {
     background: linear-gradient(135deg, rgba(71, 85, 105, 0.1), rgba(30, 58, 138, 0.1));
     border: 2px dashed var(--primary-light);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 3rem 2rem;
     text-align: center;
     cursor: pointer;
@@ -230,11 +227,6 @@
     border-color: #3b82f6;
   }
 
-  body.light-mode .upload-section:hover {
-    border-color: #06b6d4;
-    background: linear-gradient(135deg, rgba(226, 232, 240, 0.5), rgba(6, 182, 212, 0.15));
-  }
-
   .upload-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
@@ -256,21 +248,15 @@
     color: var(--muted-text);
   }
 
-  body.light-mode .upload-text p {
-    color: #64748b;
-  }
-
   input[type="file"] {
     display: none;
   }
 
   .status-message {
-    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.875rem;
-    min-height: 1.5rem;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
     background: rgba(16, 185, 129, 0.1);
     border: 1px solid rgba(16, 185, 129, 0.3);
     color: #10b981;
@@ -279,6 +265,7 @@
 
   .status-message.show {
     display: block;
+    animation: slideIn 0.3s ease;
   }
 
   .status-message.error {
@@ -287,15 +274,19 @@
     color: #ef4444;
   }
 
-  body.light-mode .status-message {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #059669;
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
+  /* ============= MAP SECTION ============= */
   .map-section {
-    margin-top: 2rem;
     display: none;
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    overflow: hidden;
   }
 
   .map-section.show {
@@ -307,10 +298,6 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
-  }
-
-  .map-title {
-    font-size: 1.1rem;
     font-weight: 600;
   }
 
@@ -320,21 +307,18 @@
     color: var(--muted-text);
   }
 
-  body.light-mode .map-coords {
-    color: #64748b;
-  }
-
   #mapPreview {
-    height: 400px;
+    height: 450px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    background: #0f172a;
+    z-index: 10;
+    position: relative;
   }
 
   body.light-mode #mapPreview {
-    border-color: #e2e8f0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    background: #f1f5f9;
   }
 
   .leaflet-container {
@@ -346,12 +330,28 @@
     background: #f1f5f9 !important;
   }
 
+  .leaflet-control-zoom {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    background: var(--dark-surface) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: var(--dark-surface) !important;
+    color: var(--light-text) !important;
+    border: none !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: var(--primary-light) !important;
+  }
+
   .leaflet-popup-content-wrapper {
     background: var(--dark-surface) !important;
     border-radius: 8px;
     border: 1px solid var(--border-color);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    font-family: 'Poppins', sans-serif;
   }
 
   .leaflet-popup-content {
@@ -359,22 +359,13 @@
     margin: 8px !important;
   }
 
-  body.light-mode .leaflet-popup-content-wrapper {
-    background: #f8fafc !important;
-    border-color: #e2e8f0;
-  }
-
-  body.light-mode .leaflet-popup-content {
-    color: #1e293b !important;
-  }
-
+  /* ============= LEGEND ============= */
   .legend-section {
-    margin-top: 2rem;
-    display: none;
-    background: rgba(71, 85, 105, 0.1);
+    background: var(--dark-surface);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
+    display: none;
   }
 
   .legend-section.show {
@@ -399,9 +390,9 @@
   }
 
   .legend-items {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
   }
 
   .legend-item {
@@ -414,14 +405,9 @@
     border: 1px solid rgba(71, 85, 105, 0.2);
   }
 
-  body.light-mode .legend-item {
-    background: rgba(226, 232, 240, 0.3);
-    border-color: #cbd5e1;
-  }
-
   .legend-swatch {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
     flex-shrink: 0;
   }
@@ -439,7 +425,6 @@
   .legend-swatch.line {
     background: #f59e0b;
     height: 3px;
-    border-radius: 2px;
   }
 
   .legend-swatch.polygon {
@@ -447,13 +432,10 @@
     border: 2px solid #10b981;
   }
 
-  .legend-info {
-    flex: 1;
-  }
-
   .legend-name {
     font-weight: 600;
     font-size: 0.9rem;
+    flex: 1;
   }
 
   .legend-count {
@@ -462,13 +444,9 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  body.light-mode .legend-count {
-    color: #64748b;
-  }
-
+  /* ============= GEOMETRY OPTIONS ============= */
   .geometry-options {
-    margin-top: 2rem;
-    background: rgba(71, 85, 105, 0.1);
+    background: var(--dark-surface);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 1.5rem;
@@ -503,7 +481,7 @@
 
   .geo-option {
     flex: 1;
-    padding: 1rem;
+    padding: 0.875rem;
     border: 2px solid var(--border-color);
     border-radius: 8px;
     background: transparent;
@@ -512,11 +490,6 @@
     font-weight: 500;
     transition: all 0.3s ease;
     font-family: 'Poppins', sans-serif;
-  }
-
-  body.light-mode .geo-option {
-    color: #1e293b;
-    border-color: #cbd5e1;
   }
 
   .geo-option:hover {
@@ -530,97 +503,177 @@
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
-  body.light-mode .geo-option.active {
-    background: linear-gradient(135deg, #3b82f6, #1e40af);
-    border-color: #3b82f6;
-    color: white;
-  }
-
-  .action-section {
-    margin-top: 2rem;
-    display: flex;
-    gap: 1rem;
-  }
-
-  .btn {
-    flex: 1;
-    padding: 1rem;
+  /* ============= BUTTON ============= */
+  .btn-convert {
+    width: 100%;
+    padding: 1.2rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    color: white;
     font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
+    font-weight: 700;
+    font-size: 1.05rem;
     cursor: pointer;
     transition: all 0.3s ease;
     display: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
   }
 
-  .btn.show {
+  .btn-convert.show {
     display: block;
   }
 
-  .btn-primary {
-    background: linear-gradient(135deg, var(--primary-light), var(--accent));
-    color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  .btn-convert::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
   }
 
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  .btn-convert:hover::before {
+    width: 300px;
+    height: 300px;
   }
 
-  .btn-primary:active:not(:disabled) {
-    transform: translateY(0);
+  .btn-convert:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
   }
 
-  .btn-primary:disabled {
+  .btn-convert:active:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .btn-convert:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 
-  .footer {
-    margin-top: 3rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--border-color);
-    text-align: center;
+  .btn-convert span {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  /* ============= SIDEBAR ============= */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .sidebar-card-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-text);
+  }
+
+  .metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+  }
+
+  .metric-item:last-child {
+    border-bottom: none;
+  }
+
+  .metric-label {
     font-size: 0.85rem;
     color: var(--muted-text);
   }
 
-  body.light-mode .footer {
-    border-top-color: #cbd5e1;
-    color: #64748b;
+  .metric-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .status-badge {
+    padding: 0.5rem 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-badge.inactive {
+    background: rgba(71, 85, 105, 0.1);
+    border-color: rgba(71, 85, 105, 0.3);
+    color: var(--muted-text);
+  }
+
+  /* ============= FOOTER ============= */
+  .footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    padding-top: 2rem;
+  }
+
+  /* ============= RESPONSIVE ============= */
+  @media (max-width: 1024px) {
+    .main-wrapper {
+      grid-template-columns: 1fr;
+      padding: 1.5rem;
+    }
+
+    #mapPreview {
+      height: 350px;
+    }
   }
 
   @media (max-width: 768px) {
-    .container {
-      padding: 1.5rem 1rem;
+    nav {
+      padding: 0 1rem;
+      height: 60px;
     }
 
-    .header-content {
-      flex-direction: column;
-      gap: 1rem;
+    .main-wrapper {
+      gap: 1.5rem;
+      padding: 1rem;
     }
 
-    .header-text h1 {
+    .header h1 {
       font-size: 2rem;
-    }
-
-    .header-features {
-      flex-direction: column;
-    }
-
-    .legend-items {
-      grid-template-columns: 1fr;
     }
 
     .geometry-toggle {
       flex-direction: column;
     }
 
-    .action-section {
-      flex-direction: column;
+    .upload-section {
+      padding: 2rem;
     }
 
     #mapPreview {
@@ -633,92 +686,115 @@
 
 <nav>
   <div class="nav-logo">
-    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-label="Mapzer icon">
-      <defs>
-        <linearGradient id="pBlue" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stop-color="#67d9ff"/>
-          <stop offset="100%" stop-color="#1ab5ec"/>
-        </linearGradient>
-      </defs>
-      <g>
-        <path d="M7 7H41C38.4 7 7 7 7 7V41C7 41 38.4 41 41 41H7V7Z" fill="url(#pBlue)" opacity="0.12"/>
-        <path d="M8 7.5C8 4.85 10.05 2.8 12.7 2.8H35.3C37.95 2.8 40 4.85 40 7.5V40.5C40 43.15 37.95 45.2 35.3 45.2H12.7C10.05 45.2 8 43.15 8 40.5V7.5Z" fill="url(#pBlue)"/>
-        <path d="M17 12H25.5C32.4 12 37.5 17.2 37.5 24.1C37.5 30.9 32.4 36.1 25.5 36.1H17V12ZM23.5 17.4V30.7H25.5C29.3 30.7 32.3 27.7 32.3 24.1C32.3 20.4 29.3 17.4 25.5 17.4H23.5Z" fill="#02070a"/>
-      </g>
-    </svg>
-    Mapzer
+    <div class="nav-logo-icon">P</div>
+    <div class="nav-logo-text">Mapzer</div>
   </div>
   <div class="nav-controls">
     <button class="theme-btn" id="themeToggle">🌙 Escuro</button>
   </div>
 </nav>
 
-<div class="container">
-  <div class="header">
-    <div class="header-content">
-      <div class="header-text">
-        <h1>Converta KML em Shapefile</h1>
-        <p>Transforme seus arquivos KML em shapefiles profissionais, diretamente no seu navegador. Sem upload, sem complicações.</p>
+<div class="main-wrapper">
+  <div class="content">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>Converta KML em Shapefile</h1>
+      <p>Transforme seus arquivos KML em shapefiles profissionais, direto no navegador. Sem upload, sem complicações.</p>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="upload-section" id="uploadZone">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">
+        <h3 id="uploadTitle">Solte seu arquivo KML aqui</h3>
+        <p id="uploadSubtitle">ou clique para selecionar</p>
       </div>
-      <div class="header-features">
-        <div class="feature-badge">Sem Upload</div>
-        <div class="feature-badge">Local</div>
-        <div class="feature-badge">WGS84</div>
+      <input type="file" id="fileInput" accept=".kml,application/vnd.google-earth.kml+xml">
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- MAP -->
+    <div class="map-section" id="mapSection">
+      <div class="map-header">
+        <div>📍 Pré-visualização do Mapa</div>
+        <div class="map-coords" id="mapExtent"></div>
+      </div>
+      <div id="mapPreview"></div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend-section" id="legendSection">
+      <div class="legend-title">Geometrias Detectadas</div>
+      <div class="legend-items" id="legendItems"></div>
+    </div>
+
+    <!-- OPTIONS -->
+    <div class="geometry-options" id="geometryOptions">
+      <div class="geometry-title">Opções de Conversão</div>
+      <div class="geometry-toggle">
+        <button class="geo-option active" data-mode="polygon">🔷 Polígonos Simples</button>
+        <button class="geo-option" data-mode="multipolygon">🔶 MultiPolígonos</button>
       </div>
     </div>
+
+    <!-- BUTTON -->
+    <button class="btn-convert show" id="convertBtn">
+      <span>🚀 Gerar Shapefile (.zip)</span>
+    </button>
   </div>
 
-  <div class="upload-section" id="uploadZone">
-    <div class="upload-icon">📁</div>
-    <div class="upload-text">
-      <h3 id="uploadTitle">Solte seu arquivo KML aqui</h3>
-      <p id="uploadSubtitle">ou clique para selecionar um arquivo</p>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Status</div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <span class="status-badge inactive" id="statusReady">Aguardando arquivo</span>
+        <span class="status-badge inactive" id="statusMap">Sem mapa</span>
+        <span class="status-badge inactive" id="statusReady2">Local Processing</span>
+      </div>
     </div>
-    <input type="file" id="fileInput" accept=".kml,application/vnd.google-earth.kml+xml">
-  </div>
 
-  <div class="status-message" id="statusMessage"></div>
-
-  <div class="map-section" id="mapSection">
-    <div class="map-header">
-      <div class="map-title">📍 Pré-visualização do Mapa</div>
-      <div class="map-coords" id="mapExtent"></div>
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Métricas</div>
+      <div class="metric-item">
+        <span class="metric-label">Feições</span>
+        <span class="metric-value" id="metricFeatures">0</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Geometrias</span>
+        <span class="metric-value" id="metricGeometries">0</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Camadas</span>
+        <span class="metric-value" id="metricLayers">0</span>
+      </div>
     </div>
-    <div id="mapPreview"></div>
-  </div>
 
-  <div class="legend-section" id="legendSection">
-    <div class="legend-title">Geometrias Detectadas</div>
-    <div class="legend-items" id="legendItems"></div>
-  </div>
-
-  <div class="geometry-options" id="geometryOptions">
-    <div class="geometry-title">Opções de Conversão</div>
-    <div class="geometry-toggle">
-      <button class="geo-option active" data-mode="polygon">🔷 Polígonos Simples</button>
-      <button class="geo-option" data-mode="multipolygon">🔶 MultiPolígonos</button>
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Informações</div>
+      <p style="font-size: 0.85rem; color: var(--muted-text); line-height: 1.6;">
+        Conversor local sem upload. Todos os dados são processados no seu navegador.
+      </p>
     </div>
-  </div>
 
-  <div class="action-section">
-    <button class="btn btn-primary show" id="convertBtn">🚀 Gerar Shapefile (.zip)</button>
-  </div>
-
-  <div class="footer">
-    <p>Mapzer © 2024 • Conversor Local • Dados não são enviados para servidores</p>
+    <div class="footer">
+      <p>Mapzer © 2024</p>
+    </div>
   </div>
 </div>
 
 <script>
 (function(){
+  // THEME
   const themeToggle = document.getElementById('themeToggle');
   const body = document.body;
   const savedTheme = localStorage.getItem('mapzer-theme') || 'dark';
   if (savedTheme === 'light') {
     body.classList.add('light-mode');
-    themeToggle.textContent = '🌙 Escuro';
-  } else {
     themeToggle.textContent = '☀️ Claro';
+  } else {
+    themeToggle.textContent = '🌙 Escuro';
   }
 
   themeToggle.addEventListener('click', () => {
@@ -726,8 +802,12 @@
     const isDark = !body.classList.contains('light-mode');
     localStorage.setItem('mapzer-theme', isDark ? 'dark' : 'light');
     themeToggle.textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
+    if (leafletMap) {
+      setTimeout(() => leafletMap.invalidateSize(), 300);
+    }
   });
 
+  // GEOMETRY MODE
   let geometryMode = 'polygon';
   const geoOptions = document.querySelectorAll('.geo-option');
   geoOptions.forEach(btn => {
@@ -738,6 +818,7 @@
     });
   });
 
+  // ELEMENTS
   const uploadZone = document.getElementById('uploadZone');
   const fileInput = document.getElementById('fileInput');
   const statusMessage = document.getElementById('statusMessage');
@@ -750,35 +831,37 @@
   const mapExtent = document.getElementById('mapExtent');
   const legendItems = document.getElementById('legendItems');
 
+  // SIDEBAR
+  const metricFeatures = document.getElementById('metricFeatures');
+  const metricGeometries = document.getElementById('metricGeometries');
+  const metricLayers = document.getElementById('metricLayers');
+  const statusReady = document.getElementById('statusReady');
+  const statusMap = document.getElementById('statusMap');
+
   let leafletMap = null;
   let geoJsonLayer = null;
   let currentGeoJSON = null;
   let currentBaseName = 'shapefile';
+  let geomCounts = {};
 
   function showStatus(msg, isError = false) {
     statusMessage.textContent = msg;
     statusMessage.classList.add('show');
-    if (isError) {
-      statusMessage.classList.add('error');
-    } else {
-      statusMessage.classList.remove('error');
-    }
+    statusMessage.classList.toggle('error', isError);
   }
 
   uploadZone.addEventListener('click', () => fileInput.click());
-  uploadZone.addEventListener('dragover', (e) => {
+  uploadZone.addEventListener('dragover', e => {
     e.preventDefault();
     uploadZone.classList.add('drag-active');
   });
-  uploadZone.addEventListener('dragleave', () => {
-    uploadZone.classList.remove('drag-active');
-  });
-  uploadZone.addEventListener('drop', (e) => {
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-active'));
+  uploadZone.addEventListener('drop', e => {
     e.preventDefault();
     uploadZone.classList.remove('drag-active');
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', (e) => {
+  fileInput.addEventListener('change', e => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
   });
 
@@ -790,12 +873,8 @@
 
     currentBaseName = file.name.replace(/\.kml$/i, '') || 'shapefile';
     uploadTitle.textContent = file.name;
-    uploadSubtitle.textContent = 'clique para trocar o arquivo';
+    uploadSubtitle.textContent = 'clique para trocar';
     showStatus('📖 Lendo arquivo...');
-
-    legendSection.classList.remove('show');
-    geometryOptions.classList.remove('show');
-    mapSection.classList.remove('show');
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -804,16 +883,16 @@
         if (xml.querySelector('parsererror')) throw new Error('XML inválido');
         const geojson = toGeoJSON.kml(xml);
         if (!geojson.features || geojson.features.length === 0) {
-          showStatus('❌ Nenhuma geometria encontrada neste KML', true);
+          showStatus('❌ Nenhuma geometria encontrada', true);
           return;
         }
         currentGeoJSON = geojson;
         analyzeAndShow(geojson);
       } catch (err) {
-        showStatus('❌ Erro ao interpretar o KML: ' + err.message, true);
+        showStatus('❌ Erro: ' + err.message, true);
       }
     };
-    reader.onerror = () => showStatus('❌ Erro ao ler o arquivo', true);
+    reader.onerror = () => showStatus('❌ Erro ao ler arquivo', true);
     reader.readAsText(file);
   }
 
@@ -833,17 +912,17 @@
   }
 
   function analyzeAndShow(geojson) {
-    const counts = {};
+    geomCounts = {};
     for (const f of expandFeatures(geojson.features)) {
       const t = f.geometry?.type;
-      if (t) counts[t] = (counts[t] || 0) + 1;
+      if (t) geomCounts[t] = (geomCounts[t] || 0) + 1;
     }
 
     legendItems.innerHTML = '';
-    const keys = Object.keys(counts);
+    const keys = Object.keys(geomCounts);
 
     if (keys.length === 0) {
-      showStatus('❌ Nenhuma geometria suportada encontrada', true);
+      showStatus('❌ Nenhuma geometria encontrada', true);
       return;
     }
 
@@ -860,61 +939,62 @@
       const [label, cls] = GEOM_LABELS[t] || [t, 'point'];
       const item = document.createElement('div');
       item.className = 'legend-item';
-      item.innerHTML = `
-        <div class="legend-swatch ${cls}"></div>
-        <div class="legend-info">
-          <div class="legend-name">${label}</div>
-          <div class="legend-count">${counts[t]} feição(ões)</div>
-        </div>
-      `;
+      item.innerHTML = `<div class="legend-swatch ${cls}"></div><div class="legend-name">${label}</div><div class="legend-count">${geomCounts[t]}</div>`;
       legendItems.appendChild(item);
     });
+
+    // UPDATE SIDEBAR
+    metricFeatures.textContent = geojson.features.length;
+    metricGeometries.textContent = keys.length;
+    metricLayers.textContent = Math.min(4, keys.filter(k => geomCounts[k] > 0).length);
+    statusReady.classList.remove('inactive');
+    statusMap.classList.remove('inactive');
 
     legendSection.classList.add('show');
     geometryOptions.classList.add('show');
     showMap(geojson);
-    showStatus(`✓ ${geojson.features.length} feição(ões) pronta(s) para converter`);
+    showStatus(`✓ ${geojson.features.length} feição(ões) pronta(s)`);
   }
 
   function showMap(geojson) {
     mapSection.classList.add('show');
-
-    if (!leafletMap) {
-      leafletMap = L.map('mapPreview', {
-        scrollWheelZoom: true,
-        attributionControl: false,
-        zoomControl: true
-      });
-
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
-      }).addTo(leafletMap);
-    }
-
-    if (geoJsonLayer) leafletMap.removeLayer(geoJsonLayer);
-
-    const STYLE = {
-      Point: { radius: 8, color: '#0ea5e9', weight: 2, fillColor: '#06b6d4', fillOpacity: 1 },
-      MultiPoint: { radius: 8, color: '#06b6d4', weight: 2, fillColor: '#22d3ee', fillOpacity: 1 },
-      LineString: { color: '#3b82f6', weight: 3, opacity: 0.9 },
-      MultiLineString: { color: '#1e40af', weight: 3, opacity: 0.9 },
-      Polygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 },
-      MultiPolygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 }
-    };
-
-    geoJsonLayer = L.geoJSON(geojson, {
-      pointToLayer: (feature, latlng) => {
-        const s = STYLE[feature.geometry.type] || STYLE.Point;
-        return L.circleMarker(latlng, s);
-      },
-      style: (feature) => STYLE[feature.geometry.type] || STYLE.LineString,
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties?.name || feature.properties?.Name;
-        if (name) layer.bindPopup(`<strong>${name}</strong>`);
-      }
-    }).addTo(leafletMap);
-
+    
     setTimeout(() => {
+      if (!leafletMap) {
+        leafletMap = L.map('mapPreview', {
+          scrollWheelZoom: true,
+          attributionControl: false,
+          zoomControl: true
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19
+        }).addTo(leafletMap);
+      }
+
+      if (geoJsonLayer) leafletMap.removeLayer(geoJsonLayer);
+
+      const STYLE = {
+        Point: { radius: 8, color: '#0ea5e9', weight: 2, fillColor: '#06b6d4', fillOpacity: 1 },
+        MultiPoint: { radius: 8, color: '#06b6d4', weight: 2, fillColor: '#22d3ee', fillOpacity: 1 },
+        LineString: { color: '#3b82f6', weight: 3, opacity: 0.9 },
+        MultiLineString: { color: '#1e40af', weight: 3, opacity: 0.9 },
+        Polygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 },
+        MultiPolygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 }
+      };
+
+      geoJsonLayer = L.geoJSON(geojson, {
+        pointToLayer: (feature, latlng) => {
+          const s = STYLE[feature.geometry.type] || STYLE.Point;
+          return L.circleMarker(latlng, s);
+        },
+        style: (feature) => STYLE[feature.geometry.type] || STYLE.LineString,
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties?.name || feature.properties?.Name;
+          if (name) layer.bindPopup(`<strong>${name}</strong>`);
+        }
+      }).addTo(leafletMap);
+
       leafletMap.invalidateSize();
       const bounds = geoJsonLayer.getBounds();
       if (bounds.isValid()) {
@@ -922,7 +1002,7 @@
         const c = bounds.getCenter();
         mapExtent.textContent = `${c.lat.toFixed(4)}° ${c.lng.toFixed(4)}°`;
       }
-    }, 0);
+    }, 100);
   }
 
   convertBtn.addEventListener('click', async () => {
@@ -934,11 +1014,14 @@
     try {
       await convert(currentGeoJSON, currentBaseName, geometryMode);
       showStatus(`✓ Download iniciado: ${currentBaseName}.zip`);
+      convertBtn.textContent = '✓ Concluído!';
+      setTimeout(() => {
+        convertBtn.textContent = '🚀 Gerar Shapefile (.zip)';
+      }, 2000);
     } catch (err) {
-      showStatus('❌ Erro na conversão: ' + err.message, true);
+      showStatus('❌ Erro: ' + err.message, true);
     } finally {
       convertBtn.disabled = false;
-      convertBtn.textContent = '🚀 Gerar Shapefile (.zip)';
     }
   });
 
@@ -947,15 +1030,13 @@
   function ringSignedArea(ring) {
     let sum = 0;
     for (let i = 0; i < ring.length - 1; i++) {
-      const [x1, y1] = ring[i];
-      const [x2, y2] = ring[i + 1];
+      const [x1, y1] = ring[i], [x2, y2] = ring[i + 1];
       sum += (x2 - x1) * (y2 + y1);
     }
     return sum;
   }
 
   function isClockwise(ring) { return ringSignedArea(ring) > 0; }
-
   function newBBox() { return { xmin: Infinity, ymin: Infinity, xmax: -Infinity, ymax: -Infinity }; }
 
   function extendBBox(bbox, coords) {
@@ -1011,15 +1092,9 @@
       const dv = new DataView(buf);
       let o = 0;
       dv.setInt32(o, SHP_MULTIPOINT, true); o += 4;
-      dv.setFloat64(o, bbox.xmin, true); o += 8;
-      dv.setFloat64(o, bbox.ymin, true); o += 8;
-      dv.setFloat64(o, bbox.xmax, true); o += 8;
-      dv.setFloat64(o, bbox.ymax, true); o += 8;
+      for (let i = 0; i < 4; i++) { dv.setFloat64(o, [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax][i], true); o += 8; }
       dv.setInt32(o, n, true); o += 4;
-      for (const [x, y] of coords) {
-        dv.setFloat64(o, x, true); o += 8;
-        dv.setFloat64(o, y, true); o += 8;
-      }
+      for (const [x, y] of coords) { dv.setFloat64(o, x, true); o += 8; dv.setFloat64(o, y, true); o += 8; }
       this._add(buf, bbox);
     }
 
@@ -1054,17 +1129,11 @@
       const dv = new DataView(buf);
       let o = 0;
       dv.setInt32(o, shapeType, true); o += 4;
-      dv.setFloat64(o, bbox.xmin, true); o += 8;
-      dv.setFloat64(o, bbox.ymin, true); o += 8;
-      dv.setFloat64(o, bbox.xmax, true); o += 8;
-      dv.setFloat64(o, bbox.ymax, true); o += 8;
+      for (let i = 0; i < 4; i++) { dv.setFloat64(o, [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax][i], true); o += 8; }
       dv.setInt32(o, numParts, true); o += 4;
       dv.setInt32(o, numPoints, true); o += 4;
       for (const p of parts) { dv.setInt32(o, p, true); o += 4; }
-      for (const [x, y] of points) {
-        dv.setFloat64(o, x, true); o += 8;
-        dv.setFloat64(o, y, true); o += 8;
-      }
+      for (const [x, y] of points) { dv.setFloat64(o, x, true); o += 8; dv.setFloat64(o, y, true); o += 8; }
       return buf;
     }
 
@@ -1079,19 +1148,11 @@
 
       const writeHeader = (dv, fileLenWords) => {
         dv.setInt32(0, 9994, false);
-        for (let i = 4; i <= 20; i += 4) dv.setInt32(i, 0, false);
         dv.setInt32(24, fileLenWords, false);
         dv.setInt32(28, 1000, true);
         dv.setInt32(32, this.shapeType, true);
         const b = this.records.length ? this.bbox : { xmin: 0, ymin: 0, xmax: 0, ymax: 0 };
-        dv.setFloat64(36, b.xmin, true);
-        dv.setFloat64(44, b.ymin, true);
-        dv.setFloat64(52, b.xmax, true);
-        dv.setFloat64(60, b.ymax, true);
-        dv.setFloat64(68, 0, true);
-        dv.setFloat64(76, 0, true);
-        dv.setFloat64(84, 0, true);
-        dv.setFloat64(92, 0, true);
+        for (let i = 0; i < 4; i++) { dv.setFloat64(36 + i * 8, [b.xmin, b.ymin, b.xmax, b.ymax][i], true); }
       };
 
       writeHeader(shpDv, totalLen / 2);
@@ -1103,7 +1164,7 @@
         const contentLenWords = rec.byteLength / 2;
         shpDv.setInt32(shpOffset, recNum, false);
         shpDv.setInt32(shpOffset + 4, contentLenWords, false);
-        new Uint8Array(shpBuf, shpOffset + 8, rec.byteLength).set(new Uint8Array(rec));
+        new Uint8Array(shpBuf, shpOffset + 8).set(new Uint8Array(rec));
         shxDv.setInt32(shxOffset, shpOffset / 2, false);
         shxDv.setInt32(shxOffset + 4, contentLenWords, false);
         shpOffset += 8 + rec.byteLength;
@@ -1117,9 +1178,7 @@
   function buildDbf(fields, rows) {
     const headerSize = 32 + 32 * fields.length + 1;
     const recordSize = 1 + fields.reduce((s, f) => s + f.length, 0);
-    const numRecords = rows.length;
-    const totalSize = headerSize + recordSize * numRecords + 1;
-    const buf = new ArrayBuffer(totalSize);
+    const buf = new ArrayBuffer(headerSize + recordSize * rows.length + 1);
     const dv = new DataView(buf);
     const bytes = new Uint8Array(buf);
     const now = new Date();
@@ -1127,7 +1186,7 @@
     dv.setUint8(1, now.getFullYear() - 1900);
     dv.setUint8(2, now.getMonth() + 1);
     dv.setUint8(3, now.getDate());
-    dv.setUint32(4, numRecords, true);
+    dv.setUint32(4, rows.length, true);
     dv.setUint16(8, headerSize, true);
     dv.setUint16(10, recordSize, true);
     let o = 32;
@@ -1139,24 +1198,21 @@
       dv.setUint8(o + 17, f.decimals || 0);
       o += 32;
     }
-    dv.setUint8(o, 0x0d); o += 1;
+    dv.setUint8(o, 0x0d);
+    o += 1;
     for (const row of rows) {
-      dv.setUint8(o, 0x20); o += 1;
+      dv.setUint8(o, 0x20);
+      o += 1;
       for (const f of fields) {
-        let val = row[f.name];
-        if (val === undefined || val === null) val = '';
+        let val = row[f.name] ?? '';
         let str;
         if (f.type === 'N') {
-          const num = typeof val === 'number' ? val : parseFloat(val);
-          str = isNaN(num) ? '' : (f.decimals ? num.toFixed(f.decimals) : String(Math.round(num)));
-          str = str.padStart(f.length, ' ');
-          if (str.length > f.length) str = str.slice(0, f.length);
+          const num = Number(val);
+          str = (isNaN(num) ? '' : (f.decimals ? num.toFixed(f.decimals) : String(Math.round(num)))).padStart(f.length);
         } else {
-          const enc = new TextEncoder().encode(String(val)).slice(0, f.length);
-          str = new TextDecoder().decode(enc).padEnd(f.length, ' ');
+          str = String(val).padEnd(f.length);
         }
-        const encBytes = new TextEncoder().encode(str).slice(0, f.length);
-        bytes.set(encBytes, o);
+        bytes.set(new TextEncoder().encode(str.slice(0, f.length)), o);
         o += f.length;
       }
     }
@@ -1175,30 +1231,26 @@
       }
     }
     const fields = keys.map(k => {
-      let allNumeric = true, maxDecimals = 0, maxLen = 1, hasValue = false;
+      let allNumeric = true, maxDecimals = 0, maxLen = 1;
       for (const r of rowsRaw) {
         const v = r[k];
         if (v === undefined || v === null || v === '') continue;
-        hasValue = true;
         const s = String(v);
         maxLen = Math.max(maxLen, new TextEncoder().encode(s).length);
         if (allNumeric) {
           const n = Number(v);
-          if (typeof v === 'object' || isNaN(n) || s.trim() === '') {
-            allNumeric = false;
-          } else {
+          if (isNaN(n)) allNumeric = false;
+          else {
             const dot = s.indexOf('.');
             if (dot >= 0) maxDecimals = Math.max(maxDecimals, Math.min(6, s.length - dot - 1));
           }
         }
       }
-      if (!hasValue) allNumeric = false;
       if (allNumeric) {
         return { name: k, type: 'N', length: Math.min(19, Math.max(3, maxLen + 2)), decimals: maxDecimals };
       }
       return { name: k, type: 'C', length: Math.min(254, Math.max(1, maxLen)) };
     });
-
     const used = new Set();
     for (const f of fields) {
       let base = (f.name || 'FIELD').replace(/[^A-Za-z0-9_]/g, '_').slice(0, 10) || 'FIELD';
@@ -1223,20 +1275,17 @@
     }
 
     const zip = new JSZip();
-    let anyLayer = false;
 
-    function layerRows(group) { return group.map(f => f.properties || {}); }
     function addLayerToZip(zip, name, writer, features) {
       const { shp, shx } = writer.build();
-      const rowsRaw = layerRows(features);
-      const fields = inferFields(rowsRaw);
-      const rows = rowsRaw.map(r => {
+      const rows = features.map(f => f.properties || {});
+      const fields = inferFields(rows);
+      const rowsData = rows.map(r => {
         const out = {};
         for (const f of fields) out[f.dbfName] = r[f.name];
         return out;
       });
-      const dbfFields = fields.map(f => ({ name: f.dbfName, type: f.type, length: f.length, decimals: f.decimals }));
-      const dbf = buildDbf(dbfFields, rows);
+      const dbf = buildDbf(fields.map(f => ({ name: f.dbfName, type: f.type, length: f.length, decimals: f.decimals })), rowsData);
       zip.file(name + '.shp', shp);
       zip.file(name + '.shx', shx);
       zip.file(name + '.dbf', dbf);
@@ -1245,19 +1294,16 @@
     }
 
     if (groups.point.length) {
-      anyLayer = true;
       const w = new ShapeWriter(SHP_POINT);
       for (const f of groups.point) { const [x, y] = f.geometry.coordinates; w.addPoint(x, y); }
       addLayerToZip(zip, `${baseName}_pontos`, w, groups.point);
     }
     if (groups.multipoint.length) {
-      anyLayer = true;
       const w = new ShapeWriter(SHP_MULTIPOINT);
       for (const f of groups.multipoint) w.addMultiPoint(f.geometry.coordinates);
       addLayerToZip(zip, `${baseName}_multipontos`, w, groups.multipoint);
     }
     if (groups.line.length) {
-      anyLayer = true;
       const w = new ShapeWriter(SHP_POLYLINE);
       for (const f of groups.line) {
         const lines = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
@@ -1266,9 +1312,7 @@
       addLayerToZip(zip, `${baseName}_linhas`, w, groups.line);
     }
     if (groups.polygon.length) {
-      anyLayer = true;
       const w = new ShapeWriter(SHP_POLYGON);
-
       if (mode === 'multipolygon') {
         for (const f of groups.polygon) {
           const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
@@ -1277,9 +1321,7 @@
       } else {
         for (const f of groups.polygon) {
           if (f.geometry.type === 'MultiPolygon') {
-            for (const poly of f.geometry.coordinates) {
-              w.addPolygon([poly]);
-            }
+            for (const poly of f.geometry.coordinates) w.addPolygon([poly]);
           } else {
             w.addPolygon([f.geometry.coordinates]);
           }
@@ -1287,8 +1329,6 @@
       }
       addLayerToZip(zip, `${baseName}_poligonos`, w, groups.polygon);
     }
-
-    if (!anyLayer) throw new Error('Nenhuma geometria compatível encontrada');
 
     const blob = await zip.generateAsync({ type: 'blob' });
     const url = URL.createObjectURL(blob);
