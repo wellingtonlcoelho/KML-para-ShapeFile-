@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Mapzer - KML → Shapefile</title>
+<meta name="description" content="Converta KML e KMZ em Shapefile (polígono simples ou multipolígono) direto no navegador, sem upload.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -680,6 +681,31 @@
       height: 300px;
     }
   }
+
+  /* ============= ADIÇÕES ============= */
+  .geometry-toggle { flex-wrap: wrap; }
+  .geo-option { min-width: 190px; }
+  .mode-hint {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--muted-text);
+  }
+  body.light-mode .mode-hint { color: #475569; }
+  .opt-check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .opt-check input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .upload-section:focus-visible,
+  .geo-option:focus-visible,
+  .theme-btn:focus-visible,
+  .btn-convert:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .status-message { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -690,7 +716,7 @@
     <div class="nav-logo-text">Mapzer</div>
   </div>
   <div class="nav-controls">
-    <button class="theme-btn" id="themeToggle">🌙 Escuro</button>
+    <button class="theme-btn" id="themeToggle" type="button">🌙 Escuro</button>
   </div>
 </nav>
 
@@ -699,20 +725,20 @@
     <!-- HEADER -->
     <div class="header">
       <h1>Converta KML em Shapefile</h1>
-      <p>Transforme seus arquivos KML em shapefiles profissionais, direto no navegador. Sem upload, sem complicações.</p>
+      <p>Transforme seus arquivos KML ou KMZ em shapefiles, direto no navegador. Sem upload, sem complicações.</p>
     </div>
 
     <!-- UPLOAD -->
-    <div class="upload-section" id="uploadZone">
+    <div class="upload-section" id="uploadZone" tabindex="0" role="button" aria-label="Selecionar arquivo KML ou KMZ">
       <div class="upload-icon">📁</div>
       <div class="upload-text">
-        <h3 id="uploadTitle">Solte seu arquivo KML aqui</h3>
+        <h3 id="uploadTitle">Solte seu arquivo KML ou KMZ aqui</h3>
         <p id="uploadSubtitle">ou clique para selecionar</p>
       </div>
-      <input type="file" id="fileInput" accept=".kml,application/vnd.google-earth.kml+xml">
+      <input type="file" id="fileInput" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
     </div>
 
-    <div class="status-message" id="statusMessage"></div>
+    <div class="status-message" id="statusMessage" role="status" aria-live="polite"></div>
 
     <!-- MAP -->
     <div class="map-section" id="mapSection">
@@ -733,13 +759,19 @@
     <div class="geometry-options" id="geometryOptions">
       <div class="geometry-title">Opções de Conversão</div>
       <div class="geometry-toggle">
-        <button class="geo-option active" data-mode="polygon">🔷 Polígonos Simples</button>
-        <button class="geo-option" data-mode="multipolygon">🔶 MultiPolígonos</button>
+        <button type="button" class="geo-option active" data-mode="simple" aria-pressed="true">🔷 Polígonos Simples</button>
+        <button type="button" class="geo-option" data-mode="feature" aria-pressed="false">🔶 MultiPolígono por feição</button>
+        <button type="button" class="geo-option" data-mode="single" aria-pressed="false">🟧 MultiPolígono único</button>
       </div>
+      <p class="mode-hint" id="modeHint"></p>
+      <label class="opt-check">
+        <input type="checkbox" id="dropStyle" checked>
+        Remover campos de estilo do KML (styleUrl, styleHash, cores…)
+      </label>
     </div>
 
     <!-- BUTTON -->
-    <button class="btn-convert show" id="convertBtn">
+    <button type="button" class="btn-convert show" id="convertBtn">
       <span>🚀 Gerar Shapefile (.zip)</span>
     </button>
   </div>
@@ -751,7 +783,7 @@
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <span class="status-badge inactive" id="statusReady">Aguardando arquivo</span>
         <span class="status-badge inactive" id="statusMap">Sem mapa</span>
-        <span class="status-badge inactive" id="statusReady2">Local Processing</span>
+        <span class="status-badge inactive" id="statusReady2">Processamento local</span>
       </div>
     </div>
 
@@ -766,7 +798,7 @@
         <span class="metric-value" id="metricGeometries">0</span>
       </div>
       <div class="metric-item">
-        <span class="metric-label">Camadas</span>
+        <span class="metric-label">Arquivos .shp</span>
         <span class="metric-value" id="metricLayers">0</span>
       </div>
     </div>
@@ -775,572 +807,17 @@
       <div class="sidebar-card-title">Informações</div>
       <p style="font-size: 0.85rem; color: var(--muted-text); line-height: 1.6;">
         Conversor local sem upload. Todos os dados são processados no seu navegador.
+        Um shapefile guarda um único tipo de geometria, então pontos, linhas e polígonos saem em arquivos separados dentro do .zip.
       </p>
     </div>
 
     <div class="footer">
-      <p>Mapzer © 2024</p>
+      <p>Mapzer © <span id="year">2026</span></p>
     </div>
   </div>
 </div>
 
-<script>
-(function(){
-  // THEME
-  const themeToggle = document.getElementById('themeToggle');
-  const body = document.body;
-  const savedTheme = localStorage.getItem('mapzer-theme') || 'dark';
-  if (savedTheme === 'light') {
-    body.classList.add('light-mode');
-    themeToggle.textContent = '☀️ Claro';
-  } else {
-    themeToggle.textContent = '🌙 Escuro';
-  }
-
-  themeToggle.addEventListener('click', () => {
-    body.classList.toggle('light-mode');
-    const isDark = !body.classList.contains('light-mode');
-    localStorage.setItem('mapzer-theme', isDark ? 'dark' : 'light');
-    themeToggle.textContent = isDark ? '☀️ Claro' : '🌙 Escuro';
-    if (leafletMap) {
-      setTimeout(() => leafletMap.invalidateSize(), 300);
-    }
-  });
-
-  // GEOMETRY MODE
-  let geometryMode = 'polygon';
-  const geoOptions = document.querySelectorAll('.geo-option');
-  geoOptions.forEach(btn => {
-    btn.addEventListener('click', () => {
-      geoOptions.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      geometryMode = btn.dataset.mode;
-    });
-  });
-
-  // ELEMENTS
-  const uploadZone = document.getElementById('uploadZone');
-  const fileInput = document.getElementById('fileInput');
-  const statusMessage = document.getElementById('statusMessage');
-  const mapSection = document.getElementById('mapSection');
-  const legendSection = document.getElementById('legendSection');
-  const geometryOptions = document.getElementById('geometryOptions');
-  const convertBtn = document.getElementById('convertBtn');
-  const uploadTitle = document.getElementById('uploadTitle');
-  const uploadSubtitle = document.getElementById('uploadSubtitle');
-  const mapExtent = document.getElementById('mapExtent');
-  const legendItems = document.getElementById('legendItems');
-
-  // SIDEBAR
-  const metricFeatures = document.getElementById('metricFeatures');
-  const metricGeometries = document.getElementById('metricGeometries');
-  const metricLayers = document.getElementById('metricLayers');
-  const statusReady = document.getElementById('statusReady');
-  const statusMap = document.getElementById('statusMap');
-
-  let leafletMap = null;
-  let geoJsonLayer = null;
-  let currentGeoJSON = null;
-  let currentBaseName = 'shapefile';
-  let geomCounts = {};
-
-  function showStatus(msg, isError = false) {
-    statusMessage.textContent = msg;
-    statusMessage.classList.add('show');
-    statusMessage.classList.toggle('error', isError);
-  }
-
-  uploadZone.addEventListener('click', () => fileInput.click());
-  uploadZone.addEventListener('dragover', e => {
-    e.preventDefault();
-    uploadZone.classList.add('drag-active');
-  });
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-active'));
-  uploadZone.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadZone.classList.remove('drag-active');
-    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-  fileInput.addEventListener('change', e => {
-    if (e.target.files[0]) handleFile(e.target.files[0]);
-  });
-
-  function handleFile(file) {
-    if (!/\.kml$/i.test(file.name)) {
-      showStatus('❌ Erro: selecione um arquivo .kml', true);
-      return;
-    }
-
-    currentBaseName = file.name.replace(/\.kml$/i, '') || 'shapefile';
-    uploadTitle.textContent = file.name;
-    uploadSubtitle.textContent = 'clique para trocar';
-    showStatus('📖 Lendo arquivo...');
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const xml = new DOMParser().parseFromString(reader.result, 'text/xml');
-        if (xml.querySelector('parsererror')) throw new Error('XML inválido');
-        const geojson = toGeoJSON.kml(xml);
-        if (!geojson.features || geojson.features.length === 0) {
-          showStatus('❌ Nenhuma geometria encontrada', true);
-          return;
-        }
-        currentGeoJSON = geojson;
-        analyzeAndShow(geojson);
-      } catch (err) {
-        showStatus('❌ Erro: ' + err.message, true);
-      }
-    };
-    reader.onerror = () => showStatus('❌ Erro ao ler arquivo', true);
-    reader.readAsText(file);
-  }
-
-  function expandFeatures(features) {
-    const out = [];
-    for (const f of features) {
-      if (!f.geometry) continue;
-      if (f.geometry.type === 'GeometryCollection') {
-        for (const g of f.geometry.geometries) {
-          out.push({ type: 'Feature', properties: f.properties, geometry: g });
-        }
-      } else {
-        out.push(f);
-      }
-    }
-    return out;
-  }
-
-  function analyzeAndShow(geojson) {
-    geomCounts = {};
-    for (const f of expandFeatures(geojson.features)) {
-      const t = f.geometry?.type;
-      if (t) geomCounts[t] = (geomCounts[t] || 0) + 1;
-    }
-
-    legendItems.innerHTML = '';
-    const keys = Object.keys(geomCounts);
-
-    if (keys.length === 0) {
-      showStatus('❌ Nenhuma geometria encontrada', true);
-      return;
-    }
-
-    const GEOM_LABELS = {
-      Point: ['Pontos', 'point'],
-      MultiPoint: ['Multi-pontos', 'multipoint'],
-      LineString: ['Linhas', 'line'],
-      MultiLineString: ['Linhas (multi)', 'line'],
-      Polygon: ['Polígonos', 'polygon'],
-      MultiPolygon: ['MultiPolígonos', 'polygon']
-    };
-
-    keys.forEach(t => {
-      const [label, cls] = GEOM_LABELS[t] || [t, 'point'];
-      const item = document.createElement('div');
-      item.className = 'legend-item';
-      item.innerHTML = `<div class="legend-swatch ${cls}"></div><div class="legend-name">${label}</div><div class="legend-count">${geomCounts[t]}</div>`;
-      legendItems.appendChild(item);
-    });
-
-    // UPDATE SIDEBAR
-    metricFeatures.textContent = geojson.features.length;
-    metricGeometries.textContent = keys.length;
-    metricLayers.textContent = Math.min(4, keys.filter(k => geomCounts[k] > 0).length);
-    statusReady.classList.remove('inactive');
-    statusMap.classList.remove('inactive');
-
-    legendSection.classList.add('show');
-    geometryOptions.classList.add('show');
-    showMap(geojson);
-    showStatus(`✓ ${geojson.features.length} feição(ões) pronta(s)`);
-  }
-
-  function showMap(geojson) {
-    mapSection.classList.add('show');
-    
-    setTimeout(() => {
-      if (!leafletMap) {
-        leafletMap = L.map('mapPreview', {
-          scrollWheelZoom: true,
-          attributionControl: false,
-          zoomControl: true
-        });
-
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          maxZoom: 19
-        }).addTo(leafletMap);
-      }
-
-      if (geoJsonLayer) leafletMap.removeLayer(geoJsonLayer);
-
-      const STYLE = {
-        Point: { radius: 8, color: '#0ea5e9', weight: 2, fillColor: '#06b6d4', fillOpacity: 1 },
-        MultiPoint: { radius: 8, color: '#06b6d4', weight: 2, fillColor: '#22d3ee', fillOpacity: 1 },
-        LineString: { color: '#3b82f6', weight: 3, opacity: 0.9 },
-        MultiLineString: { color: '#1e40af', weight: 3, opacity: 0.9 },
-        Polygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 },
-        MultiPolygon: { color: '#0284c7', weight: 2, fillColor: '#0ea5e9', fillOpacity: 0.3 }
-      };
-
-      geoJsonLayer = L.geoJSON(geojson, {
-        pointToLayer: (feature, latlng) => {
-          const s = STYLE[feature.geometry.type] || STYLE.Point;
-          return L.circleMarker(latlng, s);
-        },
-        style: (feature) => STYLE[feature.geometry.type] || STYLE.LineString,
-        onEachFeature: (feature, layer) => {
-          const name = feature.properties?.name || feature.properties?.Name;
-          if (name) layer.bindPopup(`<strong>${name}</strong>`);
-        }
-      }).addTo(leafletMap);
-
-      leafletMap.invalidateSize();
-      const bounds = geoJsonLayer.getBounds();
-      if (bounds.isValid()) {
-        leafletMap.fitBounds(bounds, { padding: [50, 50] });
-        const c = bounds.getCenter();
-        mapExtent.textContent = `${c.lat.toFixed(4)}° ${c.lng.toFixed(4)}°`;
-      }
-    }, 100);
-  }
-
-  convertBtn.addEventListener('click', async () => {
-    if (!currentGeoJSON) return;
-    convertBtn.disabled = true;
-    convertBtn.textContent = '⏳ Convertendo...';
-    showStatus('🔄 Gerando shapefiles...');
-
-    try {
-      await convert(currentGeoJSON, currentBaseName, geometryMode);
-      showStatus(`✓ Download iniciado: ${currentBaseName}.zip`);
-      convertBtn.textContent = '✓ Concluído!';
-      setTimeout(() => {
-        convertBtn.textContent = '🚀 Gerar Shapefile (.zip)';
-      }, 2000);
-    } catch (err) {
-      showStatus('❌ Erro: ' + err.message, true);
-    } finally {
-      convertBtn.disabled = false;
-    }
-  });
-
-  const SHP_POINT = 1, SHP_POLYLINE = 3, SHP_POLYGON = 5, SHP_MULTIPOINT = 8;
-
-  function ringSignedArea(ring) {
-    let sum = 0;
-    for (let i = 0; i < ring.length - 1; i++) {
-      const [x1, y1] = ring[i], [x2, y2] = ring[i + 1];
-      sum += (x2 - x1) * (y2 + y1);
-    }
-    return sum;
-  }
-
-  function isClockwise(ring) { return ringSignedArea(ring) > 0; }
-  function newBBox() { return { xmin: Infinity, ymin: Infinity, xmax: -Infinity, ymax: -Infinity }; }
-
-  function extendBBox(bbox, coords) {
-    for (const [x, y] of coords) {
-      bbox.xmin = Math.min(bbox.xmin, x);
-      bbox.xmax = Math.max(bbox.xmax, x);
-      bbox.ymin = Math.min(bbox.ymin, y);
-      bbox.ymax = Math.max(bbox.ymax, y);
-    }
-  }
-
-  function buildPartsPoints(lines) {
-    const parts = [], points = [];
-    let idx = 0;
-    for (const line of lines) {
-      parts.push(idx);
-      for (const pt of line) { points.push(pt); idx++; }
-    }
-    return { parts, points };
-  }
-
-  class ShapeWriter {
-    constructor(shapeType) {
-      this.shapeType = shapeType;
-      this.records = [];
-      this.bbox = newBBox();
-    }
-
-    _add(buf, bbox) {
-      this.records.push(buf);
-      if (bbox) {
-        this.bbox.xmin = Math.min(this.bbox.xmin, bbox.xmin);
-        this.bbox.xmax = Math.max(this.bbox.xmax, bbox.xmax);
-        this.bbox.ymin = Math.min(this.bbox.ymin, bbox.ymin);
-        this.bbox.ymax = Math.max(this.bbox.ymax, bbox.ymax);
-      }
-    }
-
-    addPoint(x, y) {
-      const buf = new ArrayBuffer(20);
-      const dv = new DataView(buf);
-      dv.setInt32(0, SHP_POINT, true);
-      dv.setFloat64(4, x, true);
-      dv.setFloat64(12, y, true);
-      this._add(buf, { xmin: x, xmax: x, ymin: y, ymax: y });
-    }
-
-    addMultiPoint(coords) {
-      const bbox = newBBox();
-      extendBBox(bbox, coords);
-      const n = coords.length;
-      const buf = new ArrayBuffer(40 + 16 * n);
-      const dv = new DataView(buf);
-      let o = 0;
-      dv.setInt32(o, SHP_MULTIPOINT, true); o += 4;
-      for (let i = 0; i < 4; i++) { dv.setFloat64(o, [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax][i], true); o += 8; }
-      dv.setInt32(o, n, true); o += 4;
-      for (const [x, y] of coords) { dv.setFloat64(o, x, true); o += 8; dv.setFloat64(o, y, true); o += 8; }
-      this._add(buf, bbox);
-    }
-
-    addPolyLine(lines) {
-      const bbox = newBBox();
-      for (const line of lines) extendBBox(bbox, line);
-      const { parts, points } = buildPartsPoints(lines);
-      this._add(this._buildPartsRecord(SHP_POLYLINE, bbox, parts, points), bbox);
-    }
-
-    addPolygon(polygons) {
-      const bbox = newBBox();
-      const fixedRings = [];
-      for (const poly of polygons) {
-        poly.forEach((ring, i) => {
-          extendBBox(bbox, ring);
-          const cw = isClockwise(ring);
-          let r = ring;
-          if (i === 0 && !cw) r = ring.slice().reverse();
-          if (i > 0 && cw) r = ring.slice().reverse();
-          fixedRings.push(r);
-        });
-      }
-      const { parts, points } = buildPartsPoints(fixedRings);
-      this._add(this._buildPartsRecord(SHP_POLYGON, bbox, parts, points), bbox);
-    }
-
-    _buildPartsRecord(shapeType, bbox, parts, points) {
-      const numParts = parts.length, numPoints = points.length;
-      const size = 4 + 32 + 4 + 4 + 4 * numParts + 16 * numPoints;
-      const buf = new ArrayBuffer(size);
-      const dv = new DataView(buf);
-      let o = 0;
-      dv.setInt32(o, shapeType, true); o += 4;
-      for (let i = 0; i < 4; i++) { dv.setFloat64(o, [bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax][i], true); o += 8; }
-      dv.setInt32(o, numParts, true); o += 4;
-      dv.setInt32(o, numPoints, true); o += 4;
-      for (const p of parts) { dv.setInt32(o, p, true); o += 4; }
-      for (const [x, y] of points) { dv.setFloat64(o, x, true); o += 8; dv.setFloat64(o, y, true); o += 8; }
-      return buf;
-    }
-
-    build() {
-      let contentBytes = 0;
-      for (const r of this.records) contentBytes += 8 + r.byteLength;
-      const totalLen = 100 + contentBytes;
-      const shpBuf = new ArrayBuffer(totalLen);
-      const shxBuf = new ArrayBuffer(100 + 8 * this.records.length);
-      const shpDv = new DataView(shpBuf);
-      const shxDv = new DataView(shxBuf);
-
-      const writeHeader = (dv, fileLenWords) => {
-        dv.setInt32(0, 9994, false);
-        dv.setInt32(24, fileLenWords, false);
-        dv.setInt32(28, 1000, true);
-        dv.setInt32(32, this.shapeType, true);
-        const b = this.records.length ? this.bbox : { xmin: 0, ymin: 0, xmax: 0, ymax: 0 };
-        for (let i = 0; i < 4; i++) { dv.setFloat64(36 + i * 8, [b.xmin, b.ymin, b.xmax, b.ymax][i], true); }
-      };
-
-      writeHeader(shpDv, totalLen / 2);
-      writeHeader(shxDv, shxBuf.byteLength / 2);
-
-      let shpOffset = 100, shxOffset = 100;
-      this.records.forEach((rec, i) => {
-        const recNum = i + 1;
-        const contentLenWords = rec.byteLength / 2;
-        shpDv.setInt32(shpOffset, recNum, false);
-        shpDv.setInt32(shpOffset + 4, contentLenWords, false);
-        new Uint8Array(shpBuf, shpOffset + 8).set(new Uint8Array(rec));
-        shxDv.setInt32(shxOffset, shpOffset / 2, false);
-        shxDv.setInt32(shxOffset + 4, contentLenWords, false);
-        shpOffset += 8 + rec.byteLength;
-        shxOffset += 8;
-      });
-
-      return { shp: shpBuf, shx: shxBuf };
-    }
-  }
-
-  function buildDbf(fields, rows) {
-    const headerSize = 32 + 32 * fields.length + 1;
-    const recordSize = 1 + fields.reduce((s, f) => s + f.length, 0);
-    const buf = new ArrayBuffer(headerSize + recordSize * rows.length + 1);
-    const dv = new DataView(buf);
-    const bytes = new Uint8Array(buf);
-    const now = new Date();
-    dv.setUint8(0, 0x03);
-    dv.setUint8(1, now.getFullYear() - 1900);
-    dv.setUint8(2, now.getMonth() + 1);
-    dv.setUint8(3, now.getDate());
-    dv.setUint32(4, rows.length, true);
-    dv.setUint16(8, headerSize, true);
-    dv.setUint16(10, recordSize, true);
-    let o = 32;
-    for (const f of fields) {
-      const nameBytes = new TextEncoder().encode(f.name.slice(0, 10));
-      bytes.set(nameBytes, o);
-      dv.setUint8(o + 11, f.type.charCodeAt(0));
-      dv.setUint8(o + 16, f.length);
-      dv.setUint8(o + 17, f.decimals || 0);
-      o += 32;
-    }
-    dv.setUint8(o, 0x0d);
-    o += 1;
-    for (const row of rows) {
-      dv.setUint8(o, 0x20);
-      o += 1;
-      for (const f of fields) {
-        let val = row[f.name] ?? '';
-        let str;
-        if (f.type === 'N') {
-          const num = Number(val);
-          str = (isNaN(num) ? '' : (f.decimals ? num.toFixed(f.decimals) : String(Math.round(num)))).padStart(f.length);
-        } else {
-          str = String(val).padEnd(f.length);
-        }
-        bytes.set(new TextEncoder().encode(str.slice(0, f.length)), o);
-        o += f.length;
-      }
-    }
-    dv.setUint8(o, 0x1a);
-    return buf;
-  }
-
-  const WGS84_PRJ = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]';
-
-  function inferFields(rowsRaw) {
-    const keys = [];
-    const seen = new Set();
-    for (const r of rowsRaw) {
-      for (const k of Object.keys(r)) {
-        if (!seen.has(k)) { seen.add(k); keys.push(k); }
-      }
-    }
-    const fields = keys.map(k => {
-      let allNumeric = true, maxDecimals = 0, maxLen = 1;
-      for (const r of rowsRaw) {
-        const v = r[k];
-        if (v === undefined || v === null || v === '') continue;
-        const s = String(v);
-        maxLen = Math.max(maxLen, new TextEncoder().encode(s).length);
-        if (allNumeric) {
-          const n = Number(v);
-          if (isNaN(n)) allNumeric = false;
-          else {
-            const dot = s.indexOf('.');
-            if (dot >= 0) maxDecimals = Math.max(maxDecimals, Math.min(6, s.length - dot - 1));
-          }
-        }
-      }
-      if (allNumeric) {
-        return { name: k, type: 'N', length: Math.min(19, Math.max(3, maxLen + 2)), decimals: maxDecimals };
-      }
-      return { name: k, type: 'C', length: Math.min(254, Math.max(1, maxLen)) };
-    });
-    const used = new Set();
-    for (const f of fields) {
-      let base = (f.name || 'FIELD').replace(/[^A-Za-z0-9_]/g, '_').slice(0, 10) || 'FIELD';
-      let name = base, n = 1;
-      while (used.has(name.toUpperCase())) { name = base.slice(0, 9 - String(n).length) + n; n++; }
-      used.add(name.toUpperCase());
-      f.dbfName = name;
-    }
-    return fields;
-  }
-
-  async function convert(geojson, baseName, mode) {
-    const feats = expandFeatures(geojson.features);
-    const groups = { point: [], multipoint: [], line: [], polygon: [] };
-
-    for (const f of feats) {
-      const t = f.geometry.type;
-      if (t === 'Point') groups.point.push(f);
-      else if (t === 'MultiPoint') groups.multipoint.push(f);
-      else if (t === 'LineString' || t === 'MultiLineString') groups.line.push(f);
-      else if (t === 'Polygon' || t === 'MultiPolygon') groups.polygon.push(f);
-    }
-
-    const zip = new JSZip();
-
-    function addLayerToZip(zip, name, writer, features) {
-      const { shp, shx } = writer.build();
-      const rows = features.map(f => f.properties || {});
-      const fields = inferFields(rows);
-      const rowsData = rows.map(r => {
-        const out = {};
-        for (const f of fields) out[f.dbfName] = r[f.name];
-        return out;
-      });
-      const dbf = buildDbf(fields.map(f => ({ name: f.dbfName, type: f.type, length: f.length, decimals: f.decimals })), rowsData);
-      zip.file(name + '.shp', shp);
-      zip.file(name + '.shx', shx);
-      zip.file(name + '.dbf', dbf);
-      zip.file(name + '.prj', WGS84_PRJ);
-      zip.file(name + '.cpg', 'UTF-8');
-    }
-
-    if (groups.point.length) {
-      const w = new ShapeWriter(SHP_POINT);
-      for (const f of groups.point) { const [x, y] = f.geometry.coordinates; w.addPoint(x, y); }
-      addLayerToZip(zip, `${baseName}_pontos`, w, groups.point);
-    }
-    if (groups.multipoint.length) {
-      const w = new ShapeWriter(SHP_MULTIPOINT);
-      for (const f of groups.multipoint) w.addMultiPoint(f.geometry.coordinates);
-      addLayerToZip(zip, `${baseName}_multipontos`, w, groups.multipoint);
-    }
-    if (groups.line.length) {
-      const w = new ShapeWriter(SHP_POLYLINE);
-      for (const f of groups.line) {
-        const lines = f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates;
-        w.addPolyLine(lines);
-      }
-      addLayerToZip(zip, `${baseName}_linhas`, w, groups.line);
-    }
-    if (groups.polygon.length) {
-      const w = new ShapeWriter(SHP_POLYGON);
-      if (mode === 'multipolygon') {
-        for (const f of groups.polygon) {
-          const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
-          w.addPolygon(polys);
-        }
-      } else {
-        for (const f of groups.polygon) {
-          if (f.geometry.type === 'MultiPolygon') {
-            for (const poly of f.geometry.coordinates) w.addPolygon([poly]);
-          } else {
-            w.addPolygon([f.geometry.coordinates]);
-          }
-        }
-      }
-      addLayerToZip(zip, `${baseName}_poligonos`, w, groups.polygon);
-    }
-
-    const blob = await zip.generateAsync({ type: 'blob' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = baseName + '.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  }
-})();
-</script>
+<script src="js/converter.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
