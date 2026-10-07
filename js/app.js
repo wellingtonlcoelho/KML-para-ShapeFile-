@@ -11,16 +11,52 @@
   };
   let leafletMap = null, tileLayer = null, geoJsonLayer = null;
 
+  // Provedores de tiles (sem API key obrigatória)
   const TILES = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    // OpenStreetMap – gratuito, sem key
+    dark:  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    // Alternativa escura via Stadia (gratuita até 200 k req/mês)
+    stadiadark:  'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+    stadialight: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+    // Google Maps (requer API key com Maps JavaScript API habilitada)
+    googleroadmap: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    googlesatellite: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    googlehybrid: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
   };
+
+  const ATTRIB = {
+    osm: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    stadia: '© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    google: '© <a href="https://maps.google.com">Google Maps</a>',
+  };
+
+  /* Retorna {url, attribution, subdomains} para o provider/tema atual */
+  function tileConfig() {
+    const dark = !document.body.classList.contains('light-mode');
+    const gk = store.get('mapzer-gkey', '');
+    const provider = store.get('mapzer-provider', 'osm');
+    if (provider === 'google' && gk) {
+      const style = store.get('mapzer-gstyle', 'roadmap');
+      const key = style === 'roadmap' ? 'googleroadmap' : style === 'satellite' ? 'googlesatellite' : 'googlehybrid';
+      return { url: TILES[key] + '&key=' + gk, attribution: ATTRIB.google, subdomains: '0123' };
+    }
+    if (provider === 'stadia') {
+      return { url: dark ? TILES.stadiadark : TILES.stadialight, attribution: ATTRIB.stadia, subdomains: 'abcd' };
+    }
+    // OSM default
+    return { url: TILES.dark, attribution: ATTRIB.osm, subdomains: 'abc' };
+  }
 
   function applyTheme(theme) {
     const dark = theme !== 'light';
     document.body.classList.toggle('light-mode', !dark);
     themeToggle.textContent = dark ? '🌙 Escuro' : '☀️ Claro';
-    if (tileLayer) tileLayer.setUrl(dark ? TILES.dark : TILES.light);
+    if (tileLayer) {
+      const cfg = tileConfig();
+      tileLayer.setUrl(cfg.url);
+      tileLayer.options.attribution = cfg.attribution;
+    }
   }
   applyTheme(store.get('mapzer-theme', 'dark'));
   themeToggle.addEventListener('click', () => {
@@ -182,9 +218,9 @@
     mapSection.classList.add('show');
     setTimeout(() => {
       if (!leafletMap) {
-        leafletMap = L.map('mapPreview', { scrollWheelZoom: true, attributionControl: false, zoomControl: true });
-        const dark = !document.body.classList.contains('light-mode');
-        tileLayer = L.tileLayer(dark ? TILES.dark : TILES.light, { maxZoom: 19 }).addTo(leafletMap);
+        leafletMap = L.map('mapPreview', { scrollWheelZoom: true, attributionControl: true, zoomControl: true });
+        const cfg = tileConfig();
+        tileLayer = L.tileLayer(cfg.url, { maxZoom: 20, subdomains: cfg.subdomains, attribution: cfg.attribution }).addTo(leafletMap);
       }
       if (geoJsonLayer) leafletMap.removeLayer(geoJsonLayer);
       geoJsonLayer = L.geoJSON(geojson, {
@@ -216,6 +252,52 @@
     a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  /* ------------------------------------------------- provedor de mapa */
+  const googleOptions = $('googleOptions');
+  const googleKey = $('googleKey');
+  const googleStyle = $('googleStyle');
+  const applyMapBtn = $('applyMapBtn');
+
+  // Restaurar estado salvo
+  const savedProvider = store.get('mapzer-provider', 'osm');
+  const savedKey = store.get('mapzer-gkey', '');
+  const savedStyle = store.get('mapzer-gstyle', 'roadmap');
+  document.querySelectorAll('input[name="mapProvider"]').forEach(r => {
+    r.checked = r.value === savedProvider;
+  });
+  if (savedKey) googleKey.value = savedKey;
+  googleStyle.value = savedStyle;
+  if (savedProvider === 'google') googleOptions.style.display = 'block';
+
+  document.querySelectorAll('input[name="mapProvider"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const v = radio.value;
+      googleOptions.style.display = v === 'google' ? 'block' : 'none';
+      if (v !== 'google') {
+        store.set('mapzer-provider', v);
+        reloadTiles();
+      }
+    });
+  });
+
+  applyMapBtn.addEventListener('click', () => {
+    const key = googleKey.value.trim();
+    if (!key) { googleKey.focus(); return; }
+    store.set('mapzer-provider', 'google');
+    store.set('mapzer-gkey', key);
+    store.set('mapzer-gstyle', googleStyle.value);
+    reloadTiles();
+  });
+
+  function reloadTiles() {
+    if (!leafletMap) return;
+    const cfg = tileConfig();
+    tileLayer.setUrl(cfg.url);
+    tileLayer.options.subdomains = cfg.subdomains;
+    tileLayer.options.attribution = cfg.attribution;
+    leafletMap.attributionControl.addAttribution(cfg.attribution);
   }
 
   convertBtn.addEventListener('click', async () => {

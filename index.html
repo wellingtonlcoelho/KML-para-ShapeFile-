@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Mapzer - KML → Shapefile</title>
 <meta name="description" content="Converta KML e KMZ em Shapefile (polígono simples ou multipolígono) direto no navegador, sem upload.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -78,24 +79,17 @@
   }
 
   .nav-logo-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #38bdf8, #0891b2);
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    color: white;
-    font-size: 28px;
-    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    width: 44px;
+    height: 44px;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(56, 170, 230, 0.35));
     transition: all 0.3s ease;
-    font-family: 'Poppins', sans-serif;
   }
 
   .nav-logo-icon:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.5);
+    filter: drop-shadow(0 8px 14px rgba(56, 170, 230, 0.55));
   }
 
   .nav-logo-text {
@@ -683,6 +677,10 @@
   }
 
   /* ============= ADIÇÕES ============= */
+  .map-provider-group { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.5rem; }
+  .provider-option { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
+  .provider-option input[type=radio] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+  .provider-option em { font-style: normal; font-size: 0.75rem; color: var(--muted-text); }
   .geometry-toggle { flex-wrap: wrap; }
   .geo-option { min-width: 190px; }
   .mode-hint {
@@ -712,7 +710,7 @@
 
 <nav>
   <div class="nav-logo">
-    <div class="nav-logo-icon">P</div>
+    <img class="nav-logo-icon" src="assets/logo.png" alt="Logo Mapzer" width="44" height="44">
     <div class="nav-logo-text">Mapzer</div>
   </div>
   <div class="nav-controls">
@@ -800,6 +798,43 @@
       <div class="metric-item">
         <span class="metric-label">Arquivos .shp</span>
         <span class="metric-value" id="metricLayers">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-card" id="mapProviderCard">
+      <div class="sidebar-card-title">Provedor de Mapa</div>
+      <div class="map-provider-group">
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="osm" checked>
+          <span>OpenStreetMap <em>(gratuito)</em></span>
+        </label>
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="stadia">
+          <span>Stadia Maps <em>(gratuito)</em></span>
+        </label>
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="google">
+          <span>Google Maps <em>(requer key)</em></span>
+        </label>
+      </div>
+      <div id="googleOptions" style="display:none;margin-top:0.75rem;">
+        <div style="margin-bottom:0.5rem;">
+          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">API Key</label>
+          <input type="password" id="googleKey" placeholder="AIza..." autocomplete="off"
+            style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">Estilo</label>
+          <select id="googleStyle" style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
+            <option value="roadmap">Mapa (roadmap)</option>
+            <option value="satellite">Satélite</option>
+            <option value="hybrid">Híbrido</option>
+          </select>
+        </div>
+        <button type="button" id="applyMapBtn" style="margin-top:0.6rem;width:100%;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:0.85rem;cursor:pointer;font-weight:600;">Aplicar</button>
+        <p style="font-size:0.75rem;color:var(--muted-text);margin-top:0.5rem;line-height:1.5;">
+          Obtenha uma key em <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener" style="color:var(--accent);">Google Cloud Console</a> com <strong>Maps JavaScript API</strong> e <strong>Maps Tile API</strong> habilitadas.
+        </p>
       </div>
     </div>
 
