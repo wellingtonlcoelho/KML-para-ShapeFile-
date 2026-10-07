@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mapzer - KML → Shapefile</title>
+<meta name="description" content="Converta KML e KMZ em Shapefile (polígono simples ou multipolígono) direto no navegador, sem upload.">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/togeojson/0.16.0/togeojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --primary: #1e40af;
+    --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
+    --accent: #06b6d4;
+    --accent-dark: #0891b2;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --dark-bg: #0f172a;
+    --dark-surface: #1e293b;
+    --dark-card: #334155;
+    --light-text: #f1f5f9;
+    --muted-text: #cbd5e1;
+    --border-color: #475569;
+  }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: var(--light-text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+  }
+
+  body.light-mode {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #1e293b;
+  }
+
+  /* ============= NAVBAR ============= */
+  nav {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+    padding: 0 2rem;
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  body.light-mode nav {
+    background: rgba(248, 250, 252, 0.95);
+    border-bottom-color: rgba(226, 232, 240, 0.5);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+  }
+
+  .nav-logo-icon {
+    width: 44px;
+    height: 44px;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 10px rgba(56, 170, 230, 0.35));
+    transition: all 0.3s ease;
+  }
+
+  .nav-logo-icon:hover {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 8px 14px rgba(56, 170, 230, 0.55));
+  }
+
+  .nav-logo-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #38bdf8, #06b6d4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  body.light-mode .nav-logo-text {
+    background: linear-gradient(135deg, #0891b2, #0369a1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .theme-btn {
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    color: var(--light-text);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .theme-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  body.light-mode .theme-btn {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #1e293b;
+  }
+
+  /* ============= MAIN LAYOUT ============= */
+  .main-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: calc(100vh - 70px);
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  /* ============= HEADER ============= */
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  body.light-mode .header h1 {
+    background: linear-gradient(135deg, #1e40af, #0891b2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .header p {
+    font-size: 0.95rem;
+    color: var(--muted-text);
+    max-width: 500px;
+  }
+
+  body.light-mode .header p {
+    color: #64748b;
+  }
+
+  /* ============= UPLOAD ZONE ============= */
+  .upload-section {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.1), rgba(30, 58, 138, 0.1));
+    border: 2px dashed var(--primary-light);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-section:hover {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.15), rgba(6, 182, 212, 0.15));
+    transform: translateY(-2px);
+  }
+
+  .upload-section.drag-active {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(30, 58, 138, 0.2));
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+  }
+
+  body.light-mode .upload-section {
+    background: linear-gradient(135deg, rgba(226, 232, 240, 0.3), rgba(30, 144, 255, 0.1));
+    border-color: #3b82f6;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .upload-text h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-text p {
+    font-size: 0.9rem;
+    color: var(--muted-text);
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .status-message {
+    padding: 1rem;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #10b981;
+    display: none;
+  }
+
+  .status-message.show {
+    display: block;
+    animation: slideIn 0.3s ease;
+  }
+
+  .status-message.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============= MAP SECTION ============= */
+  .map-section {
+    display: none;
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    overflow: hidden;
+  }
+
+  .map-section.show {
+    display: block;
+  }
+
+  .map-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .map-coords {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted-text);
+  }
+
+  #mapPreview {
+    height: 450px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    background: #0f172a;
+    z-index: 10;
+    position: relative;
+  }
+
+  body.light-mode #mapPreview {
+    background: #f1f5f9;
+  }
+
+  .leaflet-container {
+    background: #0f172a !important;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  body.light-mode .leaflet-container {
+    background: #f1f5f9 !important;
+  }
+
+  .leaflet-control-zoom {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    background: var(--dark-surface) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .leaflet-control-zoom a {
+    background: var(--dark-surface) !important;
+    color: var(--light-text) !important;
+    border: none !important;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: var(--primary-light) !important;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: var(--dark-surface) !important;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .leaflet-popup-content {
+    color: var(--light-text) !important;
+    margin: 8px !important;
+  }
+
+  /* ============= LEGEND ============= */
+  .legend-section {
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: none;
+  }
+
+  .legend-section.show {
+    display: block;
+  }
+
+  .legend-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .legend-title::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--primary-light);
+    border-radius: 50%;
+  }
+
+  .legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(30, 40, 80, 0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(71, 85, 105, 0.2);
+  }
+
+  .legend-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .legend-swatch.point {
+    background: #ef4444;
+    border-radius: 50%;
+  }
+
+  .legend-swatch.multipoint {
+    background: #06b6d4;
+    border-radius: 50%;
+  }
+
+  .legend-swatch.line {
+    background: #f59e0b;
+    height: 3px;
+  }
+
+  .legend-swatch.polygon {
+    background: rgba(16, 185, 129, 0.3);
+    border: 2px solid #10b981;
+  }
+
+  .legend-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex: 1;
+  }
+
+  .legend-count {
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ============= GEOMETRY OPTIONS ============= */
+  .geometry-options {
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: none;
+  }
+
+  .geometry-options.show {
+    display: block;
+  }
+
+  .geometry-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .geometry-title::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .geometry-toggle {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .geo-option {
+    flex: 1;
+    padding: 0.875rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--light-text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .geo-option:hover {
+    border-color: var(--primary-light);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .geo-option.active {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-color: var(--primary-light);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  /* ============= BUTTON ============= */
+  .btn-convert {
+    width: 100%;
+    padding: 1.2rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: none;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-convert.show {
+    display: block;
+  }
+
+  .btn-convert::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .btn-convert:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  .btn-convert:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+  }
+
+  .btn-convert:active:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .btn-convert:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-convert span {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  /* ============= SIDEBAR ============= */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .sidebar-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .sidebar-card-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-text);
+  }
+
+  .metric-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+  }
+
+  .metric-item:last-child {
+    border-bottom: none;
+  }
+
+  .metric-label {
+    font-size: 0.85rem;
+    color: var(--muted-text);
+  }
+
+  .metric-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, var(--primary-light), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .status-badge {
+    padding: 0.5rem 0.75rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    color: #10b981;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-badge.inactive {
+    background: rgba(71, 85, 105, 0.1);
+    border-color: rgba(71, 85, 105, 0.3);
+    color: var(--muted-text);
+  }
+
+  /* ============= FOOTER ============= */
+  .footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted-text);
+    padding-top: 2rem;
+  }
+
+  /* ============= RESPONSIVE ============= */
+  @media (max-width: 1024px) {
+    .main-wrapper {
+      grid-template-columns: 1fr;
+      padding: 1.5rem;
+    }
+
+    #mapPreview {
+      height: 350px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    nav {
+      padding: 0 1rem;
+      height: 60px;
+    }
+
+    .main-wrapper {
+      gap: 1.5rem;
+      padding: 1rem;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+    }
+
+    .geometry-toggle {
+      flex-direction: column;
+    }
+
+    .upload-section {
+      padding: 2rem;
+    }
+
+    #mapPreview {
+      height: 300px;
+    }
+  }
+
+  /* ============= ADIÇÕES ============= */
+  .map-provider-group { display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.5rem; }
+  .provider-option { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; }
+  .provider-option input[type=radio] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+  .provider-option em { font-style: normal; font-size: 0.75rem; color: var(--muted-text); }
+  .geometry-toggle { flex-wrap: wrap; }
+  .geo-option { min-width: 190px; }
+  .mode-hint {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--muted-text);
+  }
+  body.light-mode .mode-hint { color: #475569; }
+  .opt-check {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .opt-check input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+  .upload-section:focus-visible,
+  .geo-option:focus-visible,
+  .theme-btn:focus-visible,
+  .btn-convert:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .status-message { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <img class="nav-logo-icon" src="assets/logo.png" alt="Logo Mapzer" width="44" height="44">
+    <div class="nav-logo-text">Mapzer</div>
+  </div>
+  <div class="nav-controls">
+    <button class="theme-btn" id="themeToggle" type="button">🌙 Escuro</button>
+  </div>
+</nav>
+
+<div class="main-wrapper">
+  <div class="content">
+    <!-- HEADER -->
+    <div class="header">
+      <h1>Converta KML em Shapefile</h1>
+      <p>Transforme seus arquivos KML ou KMZ em shapefiles, direto no navegador. Sem upload, sem complicações.</p>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="upload-section" id="uploadZone" tabindex="0" role="button" aria-label="Selecionar arquivo KML ou KMZ">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">
+        <h3 id="uploadTitle">Solte seu arquivo KML ou KMZ aqui</h3>
+        <p id="uploadSubtitle">ou clique para selecionar</p>
+      </div>
+      <input type="file" id="fileInput" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz">
+    </div>
+
+    <div class="status-message" id="statusMessage" role="status" aria-live="polite"></div>
+
+    <!-- MAP -->
+    <div class="map-section" id="mapSection">
+      <div class="map-header">
+        <div>📍 Pré-visualização do Mapa</div>
+        <div class="map-coords" id="mapExtent"></div>
+      </div>
+      <div id="mapPreview"></div>
+      <p id="mapNotice" role="status" aria-live="polite" style="padding:0 1rem;color:var(--muted-text)"></p>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend-section" id="legendSection">
+      <div class="legend-title">Geometrias Detectadas</div>
+      <div class="legend-items" id="legendItems"></div>
+    </div>
+
+    <!-- OPTIONS -->
+    <div class="geometry-options" id="geometryOptions">
+      <div class="geometry-title">Opções de Conversão</div>
+      <div class="geometry-toggle">
+        <button type="button" class="geo-option active" data-mode="simple" aria-pressed="true">🔷 Partes simples</button>
+        <button type="button" class="geo-option" data-mode="feature" aria-pressed="false">🔶 Por feição</button>
+        <button type="button" class="geo-option" data-mode="single" aria-pressed="false">🟧 Unir por camada</button>
+      </div>
+      <p class="mode-hint" id="modeHint"></p>
+      <label class="opt-check">
+        <input type="checkbox" id="dropStyle" checked>
+        Remover campos de estilo do KML (styleUrl, styleHash, cores…)
+      </label>
+    </div>
+
+    <!-- BUTTON -->
+    <button type="button" class="btn-convert show" id="convertBtn" disabled>
+      <span>🚀 Gerar Shapefile (.zip)</span>
+    </button>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Status</div>
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <span class="status-badge inactive" id="statusReady">Aguardando arquivo</span>
+        <span class="status-badge inactive" id="statusMap">Sem mapa</span>
+        <span class="status-badge inactive" id="statusReady2">Processamento local</span>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Métricas</div>
+      <div class="metric-item">
+        <span class="metric-label">Feições</span>
+        <span class="metric-value" id="metricFeatures">0</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Geometrias</span>
+        <span class="metric-value" id="metricGeometries">0</span>
+      </div>
+      <div class="metric-item">
+        <span class="metric-label">Arquivos .shp</span>
+        <span class="metric-value" id="metricLayers">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-card" id="mapProviderCard">
+      <div class="sidebar-card-title">Provedor de Mapa</div>
+      <div class="map-provider-group">
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="osm" checked>
+          <span>OpenStreetMap <em>(gratuito)</em></span>
+        </label>
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="stadia">
+          <span>Stadia Maps <em>(requer configuração)</em></span>
+        </label>
+        <label class="provider-option">
+          <input type="radio" name="mapProvider" value="google">
+          <span>Google Maps <em>(requer key)</em></span>
+        </label>
+      </div>
+      <p style="font-size:0.8rem;color:var(--muted-text)">O mapa inicia com OpenStreetMap, sem chave de API. Requer conexão com a internet.</p>
+      <button type="button" id="retryMapBtn" class="theme-btn">Restaurar mapa OpenStreetMap</button>
+      <div id="googleOptions" style="display:none;margin-top:0.75rem;">
+        <div style="margin-bottom:0.5rem;">
+          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">API Key</label>
+          <input type="password" id="googleKey" placeholder="AIza..." autocomplete="off"
+            style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">Estilo</label>
+          <select id="googleStyle" style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
+            <option value="roadmap">Mapa (roadmap)</option>
+            <option value="satellite">Satélite</option>
+            <option value="hybrid">Híbrido</option>
+          </select>
+        </div>
+        <button type="button" id="applyMapBtn" style="margin-top:0.6rem;width:100%;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:0.85rem;cursor:pointer;font-weight:600;">Aplicar</button>
+        <p style="font-size:0.75rem;color:var(--muted-text);margin-top:0.5rem;line-height:1.5;">
+          Obtenha uma key em <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener" style="color:var(--accent);">Google Cloud Console</a> com <strong>Maps JavaScript API</strong> e <strong>Maps Tile API</strong> habilitadas.
+        </p>
+      </div>
+    </div>
+
+    <div class="sidebar-card">
+      <div class="sidebar-card-title">Informações</div>
+      <p style="font-size: 0.85rem; color: var(--muted-text); line-height: 1.6;">
+        Conversor local sem upload. Todos os dados são processados no seu navegador.
+        Um shapefile guarda um único tipo de geometria, então pontos, linhas e polígonos saem em arquivos separados dentro do .zip.
+      </p>
+    </div>
+
+    <div class="footer">
+      <p>Mapzer © <span id="year">2026</span></p>
+    </div>
+  </div>
+</div>
+
+<script src="js/converter.js"></script>
+<script src="js/app.js?v=1.1.1"></script>
+</body>
+</html>
