@@ -1,5 +1,13 @@
 # Mapzer · KML/KMZ → Shapefile
 
+Versão aprimorada 1.1.2. Consulte [ANALISE-E-MELHORIAS.md](ANALISE-E-MELHORIAS.md) para correções, testes e limitações.
+
+O mapa utiliza exclusivamente OpenStreetMap, sem chave de API. Se houver falha, use **Recarregar mapa**. Os temas claro e escuro se aplicam a todos os painéis, controles e popups, mantendo o mapa de ruas. Passe o cursor sobre uma feição para identificar seu nome; clique para ver tipo de geometria e atributos disponíveis no KML. Para publicação, substitua também os arquivos da pasta `js`; a página referencia a versão nova de `app.js` para evitar reutilizar o script antigo do cache.
+
+Abra `index.html` para usar. `index2.html` redireciona à interface principal.
+O ZIP exportado inclui `campos.json` com a correspondência dos atributos e, quando necessário, `avisos.txt` sobre truncamento de textos.
+Entrada limitada a 50 MB; saída WGS84 em duas dimensões. Bibliotecas e mapas requerem conexão externa.
+
 Conversor 100% no navegador (sem servidor, sem upload). Hospedável direto no GitHub Pages.
 
 ```

@@ -10,53 +10,17 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* modo privado */ } }
   };
   let leafletMap = null, tileLayer = null, geoJsonLayer = null;
-
-  // Provedores de tiles (sem API key obrigatória)
-  const TILES = {
-    // OpenStreetMap – gratuito, sem key
-    dark:  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    light: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    // Alternativa escura via Stadia (gratuita até 200 k req/mês)
-    stadiadark:  'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
-    stadialight: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
-    // Google Maps (requer API key com Maps JavaScript API habilitada)
-    googleroadmap: 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-    googlesatellite: 'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    googlehybrid: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+  let backgroundStatus = { message: 'Carregando mapa de fundo', error: false };
+  const OSM = {
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   };
-
-  const ATTRIB = {
-    osm: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    stadia: '© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    google: '© <a href="https://maps.google.com">Google Maps</a>',
-  };
-
-  /* Retorna {url, attribution, subdomains} para o provider/tema atual */
-  function tileConfig() {
-    const dark = !document.body.classList.contains('light-mode');
-    const gk = store.get('mapzer-gkey', '');
-    const provider = store.get('mapzer-provider', 'osm');
-    if (provider === 'google' && gk) {
-      const style = store.get('mapzer-gstyle', 'roadmap');
-      const key = style === 'roadmap' ? 'googleroadmap' : style === 'satellite' ? 'googlesatellite' : 'googlehybrid';
-      return { url: TILES[key] + '&key=' + gk, attribution: ATTRIB.google, subdomains: '0123' };
-    }
-    if (provider === 'stadia') {
-      return { url: dark ? TILES.stadiadark : TILES.stadialight, attribution: ATTRIB.stadia, subdomains: 'abcd' };
-    }
-    // OSM default
-    return { url: TILES.dark, attribution: ATTRIB.osm, subdomains: 'abc' };
-  }
 
   function applyTheme(theme) {
     const dark = theme !== 'light';
     document.body.classList.toggle('light-mode', !dark);
     themeToggle.textContent = dark ? '🌙 Escuro' : '☀️ Claro';
-    if (tileLayer) {
-      const cfg = tileConfig();
-      tileLayer.setUrl(cfg.url);
-      tileLayer.options.attribution = cfg.attribution;
-    }
+
   }
   applyTheme(store.get('mapzer-theme', 'dark'));
   themeToggle.addEventListener('click', () => {
@@ -79,6 +43,9 @@
 
   let currentGeoJSON = null, currentItems = [], currentBaseName = 'shapefile';
   let geometryMode = 'simple';
+  let loadVersion = 0, converting = false;
+  const MAX_FILE_BYTES = 50 * 1024 * 1024;
+  convertBtn.disabled = true;
 
   function showStatus(msg, isError) {
     statusMessage.textContent = msg;
@@ -88,16 +55,16 @@
 
   /* ---------------------------------------------------------------- modos */
   const MODE_TEXT = {
-    simple: 'Um registro por polígono. Um MultiPolígono do KML é desmembrado em vários registros, repetindo os atributos.',
-    feature: 'Um registro por Placemark. Placemarks com vários polígonos viram um único MultiPolígono.',
-    single: 'O arquivo inteiro vira um único registro MultiPolígono. O nome do arquivo é usado como atributo.'
+    simple: 'Um registro por polígono ou linha, repetindo os atributos nas partes separadas.',
+    feature: 'Um registro por Placemark em cada camada de linhas ou polígonos, preservando os atributos.',
+    single: 'Um registro por camada de linhas ou polígonos. Somente o nome do arquivo é mantido como atributo. Pontos não são agrupados.'
   };
 
   function recordsFor(mode) {
     const poly = currentItems.filter(i => i.kind === 'polygon');
     if (!poly.length) return null;
     if (mode === 'simple') return poly.reduce((s, i) => s + i.polys.length, 0);
-    if (mode === 'feature') return poly.length;
+    if (mode === 'feature') return new Set(poly.map(i => i.featureId)).size;
     return 1;
   }
 
@@ -116,9 +83,9 @@
   }));
 
   /* -------------------------------------------------------------- arquivo */
-  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('click', e => { if (e.target !== fileInput && !converting) fileInput.click(); });
   uploadZone.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    if (!converting && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); fileInput.click(); }
   });
   uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-active'); });
   uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-active'));
@@ -127,7 +94,11 @@
     uploadZone.classList.remove('drag-active');
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    fileInput.value = '';
+    if (file) handleFile(file);
+  });
 
   function readText(file) {
     return new Promise((resolve, reject) => {
@@ -150,22 +121,44 @@
   }
 
   async function handleFile(file) {
-    if (!/\.(kml|kmz)$/i.test(file.name)) { showStatus('❌ Selecione um arquivo .kml ou .kmz', true); return; }
-    currentBaseName = C.slug(file.name.replace(/\.(kml|kmz)$/i, ''));
+    if (converting) return;
+    const version = ++loadVersion;
+    currentGeoJSON = null;
+    currentItems = [];
+    convertBtn.disabled = true;
+    mapSection.classList.remove('show');
+    legendSection.classList.remove('show');
+    geometryOptions.classList.remove('show');
+    metricFeatures.textContent = metricGeometries.textContent = metricLayers.textContent = '0';
+    statusReady.textContent = 'Aguardando arquivo válido';
+    statusReady.classList.add('inactive');
+    statusMap.textContent = 'Sem mapa';
+    statusMap.classList.add('inactive');
     uploadTitle.textContent = file.name;
     uploadSubtitle.textContent = 'clique para trocar';
     showStatus('📖 Lendo arquivo...');
     try {
+      if (!/\.(kml|kmz)$/i.test(file.name)) throw new Error('Selecione um arquivo .kml ou .kmz');
+      if (file.size > MAX_FILE_BYTES) throw new Error('O limite por arquivo é de 50 MB');
+      if (typeof toGeoJSON === 'undefined' || typeof JSZip === 'undefined') {
+        throw new Error('As bibliotecas de leitura não carregaram. Verifique sua conexão e recarregue a página');
+      }
       const text = await kmlTextFrom(file);
+      if (version !== loadVersion) return;
+      if (text.length > MAX_FILE_BYTES) throw new Error('O KML extraído excede o limite de 50 milhões de caracteres');
       const xml = new DOMParser().parseFromString(text, 'text/xml');
       if (xml.querySelector('parsererror')) throw new Error('XML inválido');
+      if (!xml.documentElement || xml.documentElement.localName.toLowerCase() !== 'kml') throw new Error('O documento não é um KML');
       const geojson = toGeoJSON.kml(xml);
       const { items, skipped } = C.normalize(geojson);
       if (!items.length) { showStatus('❌ Nenhuma geometria válida encontrada', true); return; }
       currentGeoJSON = geojson;
       currentItems = items;
+      currentBaseName = C.slug(file.name.replace(/\.(kml|kmz)$/i, ''));
+      convertBtn.disabled = false;
       analyzeAndShow(geojson, items, skipped);
     } catch (err) {
+      if (version !== loadVersion) return;
       showStatus('❌ Erro: ' + err.message, true);
     }
   }
@@ -194,13 +187,11 @@
     metricLayers.textContent = kinds;
     statusReady.textContent = 'Arquivo pronto';
     statusReady.classList.remove('inactive');
-    statusMap.textContent = 'Mapa ativo';
-    statusMap.classList.remove('inactive');
 
     legendSection.classList.add('show');
     geometryOptions.classList.add('show');
     renderModeHint();
-    showMap(geojson);
+    showMap(previewGeoJSON(items), loadVersion);
     let msg = `✓ ${geojson.features.length} feição(ões) lida(s)`;
     if (skipped) msg += ` — ${skipped} ignorada(s) por geometria vazia ou inválida`;
     showStatus(msg);
@@ -214,33 +205,71 @@
   };
   const styleFor = t => /Point/.test(t) ? STYLE.Point : /Line/.test(t) ? STYLE.LineString : STYLE.Polygon;
 
-  function showMap(geojson) {
+  function previewGeoJSON(items) {
+    return { type: 'FeatureCollection', features: items.map(i => ({
+      type: 'Feature', properties: i.properties,
+      geometry: i.kind === 'point' ? { type: 'Point', coordinates: i.coords } :
+        i.kind === 'multipoint' ? { type: 'MultiPoint', coordinates: i.coords } :
+        i.kind === 'line' ? { type: 'MultiLineString', coordinates: i.lines } :
+        { type: 'MultiPolygon', coordinates: i.polys }
+    })) };
+  }
+
+  function showMap(geojson, version) {
+    if (typeof L === 'undefined') {
+      statusMap.textContent = 'Mapa indisponível; conversão disponível';
+      return;
+    }
     mapSection.classList.add('show');
     setTimeout(() => {
+      if (version !== loadVersion) return;
+      try {
       if (!leafletMap) {
         leafletMap = L.map('mapPreview', { scrollWheelZoom: true, attributionControl: true, zoomControl: true });
-        const cfg = tileConfig();
-        tileLayer = L.tileLayer(cfg.url, { maxZoom: 20, subdomains: cfg.subdomains, attribution: cfg.attribution }).addTo(leafletMap);
+        reloadTiles();
       }
       if (geoJsonLayer) leafletMap.removeLayer(geoJsonLayer);
       geoJsonLayer = L.geoJSON(geojson, {
         pointToLayer: (f, latlng) => L.circleMarker(latlng, styleFor(f.geometry.type)),
         style: f => styleFor(f.geometry.type),
         onEachFeature: (f, layer) => {
-          const name = f.properties && (f.properties.name || f.properties.Name);
-          if (name) {                       // textContent: evita HTML injetado pelo KML
-            const el = document.createElement('strong');
-            el.textContent = String(name);
-            layer.bindPopup(el);
+          const props = f.properties || {};
+          const name = props.name || props.Name || 'Feição sem nome';
+          const tooltip = document.createElement('span');
+          tooltip.textContent = String(name);
+          layer.bindTooltip(tooltip, { sticky: true });
+          const popup = document.createElement('div');
+          popup.className = 'feature-info';
+          const title = document.createElement('strong');
+          title.textContent = String(name);
+          const type = document.createElement('p');
+          type.textContent = 'Geometria: ' + ({ Point: 'Ponto', MultiPoint: 'Multipontos', MultiLineString: 'Linha', MultiPolygon: 'Polígono' }[f.geometry.type] || f.geometry.type);
+          const details = document.createElement('dl');
+          for (const [key, value] of Object.entries(props)) {
+            if (/^(name|style.*|stroke.*|fill.*|icon|marker.*|visibility|open|_.*)$/i.test(key) || value == null || value === '' || typeof value === 'object') continue;
+            const label = document.createElement('dt');
+            label.textContent = key === 'description' ? 'Descrição' : key;
+            const text = document.createElement('dd');
+            text.textContent = key === 'description' ? String(value).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : String(value);
+            details.append(label, text);
           }
+          popup.append(title, type, details);
+          layer.bindPopup(popup, { maxWidth: 340 });
         }
       }).addTo(leafletMap);
       leafletMap.invalidateSize();
       const b = geoJsonLayer.getBounds();
       if (b.isValid()) {
-        leafletMap.fitBounds(b, { padding: [50, 50] });
+        leafletMap.fitBounds(b, { padding: [50, 50], maxZoom: 16 });
         const c = b.getCenter();
         mapExtent.textContent = `${c.lat.toFixed(4)}° ${c.lng.toFixed(4)}°`;
+      }
+      statusMap.textContent = backgroundStatus.message;
+      statusMap.classList.toggle('inactive', backgroundStatus.error);
+      } catch (err) {
+        console.warn('Não foi possível exibir a pré-visualização do mapa:', err);
+        statusMap.textContent = 'Mapa indisponível; conversão disponível';
+        statusMap.classList.add('inactive');
       }
     }, 100);
   }
@@ -254,71 +283,75 @@
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
-  /* ------------------------------------------------- provedor de mapa */
-  const googleOptions = $('googleOptions');
-  const googleKey = $('googleKey');
-  const googleStyle = $('googleStyle');
-  const applyMapBtn = $('applyMapBtn');
-
-  // Restaurar estado salvo
-  const savedProvider = store.get('mapzer-provider', 'osm');
-  const savedKey = store.get('mapzer-gkey', '');
-  const savedStyle = store.get('mapzer-gstyle', 'roadmap');
-  document.querySelectorAll('input[name="mapProvider"]').forEach(r => {
-    r.checked = r.value === savedProvider;
-  });
-  if (savedKey) googleKey.value = savedKey;
-  googleStyle.value = savedStyle;
-  if (savedProvider === 'google') googleOptions.style.display = 'block';
-
-  document.querySelectorAll('input[name="mapProvider"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      const v = radio.value;
-      googleOptions.style.display = v === 'google' ? 'block' : 'none';
-      if (v !== 'google') {
-        store.set('mapzer-provider', v);
-        reloadTiles();
-      }
-    });
-  });
-
-  applyMapBtn.addEventListener('click', () => {
-    const key = googleKey.value.trim();
-    if (!key) { googleKey.focus(); return; }
-    store.set('mapzer-provider', 'google');
-    store.set('mapzer-gkey', key);
-    store.set('mapzer-gstyle', googleStyle.value);
-    reloadTiles();
-  });
-
+  /* ------------------------------------------------- mapa OpenStreetMap */
   function reloadTiles() {
     if (!leafletMap) return;
-    const cfg = tileConfig();
-    tileLayer.setUrl(cfg.url);
-    tileLayer.options.subdomains = cfg.subdomains;
-    tileLayer.options.attribution = cfg.attribution;
-    leafletMap.attributionControl.addAttribution(cfg.attribution);
+    const cfg = OSM;
+    if (tileLayer) { leafletMap.removeLayer(tileLayer); tileLayer.off(); }
+    const layer = L.tileLayer(cfg.url, {
+      maxNativeZoom: 19,
+      maxZoom: 22, attribution: cfg.attribution
+    });
+    tileLayer = layer;
+    let failures = 0, loaded = 0;
+    const report = (message, error) => {
+      backgroundStatus = { message, error: !!error };
+      statusMap.textContent = message;
+      statusMap.classList.toggle('inactive', !!error);
+      $('mapNotice').textContent = error ? message + '. As delimitações e a conversão continuam disponíveis.' : '';
+    };
+    report('Carregando mapa de fundo', false);
+    layer.on('loading', () => {
+      if (tileLayer !== layer) return;
+      failures = loaded = 0;
+      report('Carregando mapa de fundo', false);
+    });
+    layer.on('tileload', () => {
+      if (tileLayer !== layer) return;
+      loaded++;
+      if (!failures) report('Mapa de fundo carregado', false);
+    });
+    layer.on('tileerror', () => {
+      if (tileLayer !== layer) return;
+      failures++;
+      report('Falha no mapa de fundo — verifique a conexão e tente novamente', true);
+    });
+    layer.on('load', () => {
+      if (tileLayer !== layer) return;
+      if (failures) report(loaded ? 'Mapa de fundo carregado parcialmente — tente novamente' : 'Mapa de fundo indisponível — verifique a conexão', true);
+      else if (loaded) report('Mapa de fundo carregado', false);
+    });
+    layer.addTo(leafletMap);
   }
 
+  $('retryMapBtn').addEventListener('click', reloadTiles);
+
   convertBtn.addEventListener('click', async () => {
+    if (converting) return;
     if (!currentGeoJSON) { showStatus('Carregue um arquivo KML primeiro', true); return; }
     convertBtn.disabled = true;
+    converting = true;
+    fileInput.disabled = true;
     convertBtn.textContent = '⏳ Convertendo...';
     showStatus('🔄 Gerando shapefiles...');
     try {
       const result = C.convert(currentGeoJSON, currentBaseName, { mode: geometryMode, dropStyle: dropStyle.checked });
       const zip = new JSZip();
       for (const f of result.files) zip.file(f.name, f.data);
+      zip.file('campos.json', JSON.stringify(result.layers.map(l => ({ camada: l.name, campos: l.fieldMapping })), null, 2));
+      if (result.warnings.length) zip.file('avisos.txt', result.warnings.join('\n'));
       const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
       download(blob, currentBaseName + '.zip');
       const resumo = result.layers.map(l => `${l.name}.shp (${l.records})`).join(', ');
-      showStatus(`✓ ${currentBaseName}.zip gerado: ${resumo}`);
+      showStatus(`✓ ${currentBaseName}.zip gerado: ${resumo}` + (result.warnings.length ? ' — Há campos truncados; consulte avisos.txt no ZIP.' : ''));
       convertBtn.textContent = '✓ Concluído!';
       setTimeout(() => { convertBtn.textContent = '🚀 Gerar Shapefile (.zip)'; }, 2000);
     } catch (err) {
       showStatus('❌ Erro: ' + err.message, true);
       convertBtn.textContent = '🚀 Gerar Shapefile (.zip)';
     } finally {
+      converting = false;
+      fileInput.disabled = false;
       convertBtn.disabled = false;
     }
   });

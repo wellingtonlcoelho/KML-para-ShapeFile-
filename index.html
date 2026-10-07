@@ -20,6 +20,7 @@
   }
 
   :root {
+    color-scheme: dark;
     --primary: #1e40af;
     --primary-light: #3b82f6;
     --primary-dark: #1e3a8a;
@@ -46,6 +47,15 @@
   }
 
   body.light-mode {
+    color-scheme: light;
+    --dark-bg: #f1f5f9;
+    --dark-surface: #ffffff;
+    --dark-card: #e2e8f0;
+    --light-text: #1e293b;
+    --muted-text: #475569;
+    --border-color: #cbd5e1;
+    --success: #047857;
+    --danger: #b91c1c;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     color: #1e293b;
   }
@@ -704,6 +714,27 @@
   .theme-btn:focus-visible,
   .btn-convert:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   .status-message { overflow-wrap: anywhere; }
+  /* Todos os painéis e controles herdam a mesma paleta. */
+  .map-help { color: var(--muted-text); font-size: .82rem; line-height: 1.6; margin: .5rem 0 1rem; }
+  .map-header { gap: 1rem; flex-wrap: wrap; color: var(--light-text); }
+  .geo-option.active { color: #fff; }
+  .theme-btn:hover { color: #fff; }
+  body.light-mode .theme-btn:hover { color: #1e293b; background: #e2e8f0; }
+  body.light-mode .legend-item { background: #f8fafc; border-color: var(--border-color); }
+  body.light-mode .geo-option.active { background: #dbeafe; color: #1e3a8a; box-shadow: none; }
+  body.light-mode .metric-value { background: none; -webkit-text-fill-color: #0369a1; color: #0369a1; }
+  body.light-mode .status-message, body.light-mode .status-badge:not(.inactive) { color: var(--success); background: #ecfdf5; border-color: #a7f3d0; }
+  body.light-mode .status-message.error { color: var(--danger); background: #fef2f2; border-color: #fecaca; }
+  body.light-mode nav { box-shadow: 0 2px 12px #0f172a12; }
+  body.light-mode .leaflet-control-zoom a:hover { background: #dbeafe !important; }
+  .leaflet-popup-tip, .leaflet-tooltip { background: var(--dark-surface); color: var(--light-text); }
+  .leaflet-tooltip { border-color: var(--border-color); }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted-text); }
+  .feature-info { max-height: 240px; overflow: auto; min-width: 160px; overflow-wrap: anywhere; }
+  .feature-info strong { display: block; padding-right: 16px; }
+  .feature-info p { margin: .5rem 0; }
+  .feature-info dt { font-weight: 600; margin-top: .5rem; }
+  .feature-info dd { margin: 0; white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -744,7 +775,9 @@
         <div>📍 Pré-visualização do Mapa</div>
         <div class="map-coords" id="mapExtent"></div>
       </div>
+      <p class="map-help">Passe o cursor para identificar uma área. Clique na delimitação para ver suas informações.</p>
       <div id="mapPreview"></div>
+      <p id="mapNotice" role="status" aria-live="polite" style="padding:0 1rem;color:var(--muted-text)"></p>
     </div>
 
     <!-- LEGEND -->
@@ -757,9 +790,9 @@
     <div class="geometry-options" id="geometryOptions">
       <div class="geometry-title">Opções de Conversão</div>
       <div class="geometry-toggle">
-        <button type="button" class="geo-option active" data-mode="simple" aria-pressed="true">🔷 Polígonos Simples</button>
-        <button type="button" class="geo-option" data-mode="feature" aria-pressed="false">🔶 MultiPolígono por feição</button>
-        <button type="button" class="geo-option" data-mode="single" aria-pressed="false">🟧 MultiPolígono único</button>
+        <button type="button" class="geo-option active" data-mode="simple" aria-pressed="true">🔷 Partes simples</button>
+        <button type="button" class="geo-option" data-mode="feature" aria-pressed="false">🔶 Por feição</button>
+        <button type="button" class="geo-option" data-mode="single" aria-pressed="false">🟧 Unir por camada</button>
       </div>
       <p class="mode-hint" id="modeHint"></p>
       <label class="opt-check">
@@ -769,7 +802,7 @@
     </div>
 
     <!-- BUTTON -->
-    <button type="button" class="btn-convert show" id="convertBtn">
+    <button type="button" class="btn-convert show" id="convertBtn" disabled>
       <span>🚀 Gerar Shapefile (.zip)</span>
     </button>
   </div>
@@ -802,40 +835,10 @@
     </div>
 
     <div class="sidebar-card" id="mapProviderCard">
-      <div class="sidebar-card-title">Provedor de Mapa</div>
-      <div class="map-provider-group">
-        <label class="provider-option">
-          <input type="radio" name="mapProvider" value="osm" checked>
-          <span>OpenStreetMap <em>(gratuito)</em></span>
-        </label>
-        <label class="provider-option">
-          <input type="radio" name="mapProvider" value="stadia">
-          <span>Stadia Maps <em>(gratuito)</em></span>
-        </label>
-        <label class="provider-option">
-          <input type="radio" name="mapProvider" value="google">
-          <span>Google Maps <em>(requer key)</em></span>
-        </label>
-      </div>
-      <div id="googleOptions" style="display:none;margin-top:0.75rem;">
-        <div style="margin-bottom:0.5rem;">
-          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">API Key</label>
-          <input type="password" id="googleKey" placeholder="AIza..." autocomplete="off"
-            style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
-        </div>
-        <div>
-          <label style="font-size:0.8rem;color:var(--muted-text);display:block;margin-bottom:4px;">Estilo</label>
-          <select id="googleStyle" style="width:100%;box-sizing:border-box;background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:0.82rem;">
-            <option value="roadmap">Mapa (roadmap)</option>
-            <option value="satellite">Satélite</option>
-            <option value="hybrid">Híbrido</option>
-          </select>
-        </div>
-        <button type="button" id="applyMapBtn" style="margin-top:0.6rem;width:100%;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:0.85rem;cursor:pointer;font-weight:600;">Aplicar</button>
-        <p style="font-size:0.75rem;color:var(--muted-text);margin-top:0.5rem;line-height:1.5;">
-          Obtenha uma key em <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener" style="color:var(--accent);">Google Cloud Console</a> com <strong>Maps JavaScript API</strong> e <strong>Maps Tile API</strong> habilitadas.
-        </p>
-      </div>
+      <div class="sidebar-card-title">Mapa de fundo</div>
+      <p><strong>OpenStreetMap</strong></p>
+      <p class="map-help">Mapa de ruas sem chave de API. Requer conexão com a internet.</p>
+      <button type="button" id="retryMapBtn" class="theme-btn">Recarregar mapa</button>
     </div>
 
     <div class="sidebar-card">
@@ -853,6 +856,6 @@
 </div>
 
 <script src="js/converter.js"></script>
-<script src="js/app.js"></script>
+<script src="js/app.js?v=1.1.2"></script>
 </body>
 </html>

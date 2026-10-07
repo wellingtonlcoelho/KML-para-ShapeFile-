@@ -31,8 +31,13 @@
     return [c[0], c[1]]; // descarta altitude
   }
   function cleanCoords(arr) {
+    if (!Array.isArray(arr)) return [];
     const out = [];
-    for (const c of arr || []) { const p = cleanCoord(c); if (p) out.push(p); }
+    for (const c of arr) {
+      const p = cleanCoord(c);
+      if (!p) return []; // não conecta trechos separados por coordenadas inválidas
+      if (!out.length || p[0] !== out[out.length - 1][0] || p[1] !== out[out.length - 1][1]) out.push(p);
+    }
     return out;
   }
   function closeRing(r) {
@@ -40,10 +45,13 @@
     return r;
   }
   function cleanPolygon(rings) {
+    if (!Array.isArray(rings) || !rings.length) return [];
     const out = [];
-    for (const raw of rings || []) {
+    for (const raw of rings) {
       const r = closeRing(cleanCoords(raw));
-      if (r.length >= 4) out.push(r);
+      // Um furo inválido também invalida o polígono: removê-lo acrescentaria área.
+      if (r.length < 4 || ringArea2(r) === 0) return [];
+      out.push(r);
     }
     return out; // [] se o anel externo for inválido
   }
@@ -51,22 +59,46 @@
   /* Achata GeometryCollection e normaliza coordenadas.
    * Devolve [{kind:'point'|'multipoint'|'line'|'polygon', parts:[...], properties}] por feição */
   function normalize(geojson) {
+    if (!geojson || geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
+      throw new Error('Esperada uma FeatureCollection GeoJSON');
+    }
     const items = [];
     let skipped = 0;
-    const visit = (g, props) => {
+    const visit = (g, props, featureId) => {
       if (!g) { skipped++; return; }
       switch (g.type) {
-        case 'GeometryCollection': (g.geometries || []).forEach(x => visit(x, props)); break;
+        case 'GeometryCollection': {
+          if (!Array.isArray(g.geometries) || !g.geometries.length) { skipped++; break; }
+          g.geometries.forEach(x => visit(x, props, featureId)); break;
+        }
         case 'Point': { const p = cleanCoord(g.coordinates); p ? items.push({ kind: 'point', coords: p, properties: props }) : skipped++; break; }
         case 'MultiPoint': { const pts = cleanCoords(g.coordinates); pts.length ? items.push({ kind: 'multipoint', coords: pts, properties: props }) : skipped++; break; }
         case 'LineString': { const l = cleanCoords(g.coordinates); l.length >= 2 ? items.push({ kind: 'line', lines: [l], properties: props }) : skipped++; break; }
-        case 'MultiLineString': { const ls = (g.coordinates || []).map(cleanCoords).filter(l => l.length >= 2); ls.length ? items.push({ kind: 'line', lines: ls, properties: props }) : skipped++; break; }
+        case 'MultiLineString': {
+          const raw = Array.isArray(g.coordinates) ? g.coordinates : [];
+          const ls = raw.map(cleanCoords).filter(l => l.length >= 2);
+          skipped += raw.length - ls.length;
+          if (ls.length) items.push({ kind: 'line', lines: ls, properties: props });
+          else if (!raw.length) skipped++;
+          break;
+        }
         case 'Polygon': { const p = cleanPolygon(g.coordinates); p.length ? items.push({ kind: 'polygon', polys: [p], properties: props }) : skipped++; break; }
-        case 'MultiPolygon': { const ps = (g.coordinates || []).map(cleanPolygon).filter(p => p.length); ps.length ? items.push({ kind: 'polygon', polys: ps, properties: props }) : skipped++; break; }
+        case 'MultiPolygon': {
+          const raw = Array.isArray(g.coordinates) ? g.coordinates : [];
+          const ps = raw.map(cleanPolygon).filter(p => p.length);
+          skipped += raw.length - ps.length;
+          if (ps.length) items.push({ kind: 'polygon', polys: ps, properties: props });
+          else if (!raw.length) skipped++;
+          break;
+        }
         default: skipped++;
       }
     };
-    for (const f of (geojson && geojson.features) || []) visit(f.geometry, f.properties || {});
+    geojson.features.forEach((f, featureId) => {
+      const start = items.length;
+      visit(f && f.geometry, (f && f.properties) || {}, featureId);
+      for (let i = start; i < items.length; i++) items[i].featureId = featureId;
+    });
     return { items, skipped };
   }
 
@@ -196,7 +228,9 @@
         const s = cleanString(v);
         maxLen = Math.max(maxLen, enc.encode(s).length);
         if (numeric) {
-          const ok = (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && NUM_RE.test(v) && v.length <= 18);
+          // Sem passar strings por Number: identificadores grandes devem permanecer exatos.
+          const ok = (typeof v === 'number' || typeof v === 'string') && NUM_RE.test(s) &&
+            (s.split('.')[1] || '').length <= 8;
           if (!ok) numeric = false;
           else { const d = s.indexOf('.'); if (d >= 0) dec = Math.max(dec, Math.min(8, s.length - d - 1)); }
         }
@@ -206,16 +240,22 @@
       used.add(name.toUpperCase());
       if (numeric && maxLen > 0 && rows.some(r => r[k] !== undefined && r[k] !== null && r[k] !== '')) {
         let len = 1;
-        for (const r of rows) { const v = r[k]; if (v !== undefined && v !== null && v !== '') len = Math.max(len, (dec ? Number(v).toFixed(dec) : String(Math.round(Number(v)))).length); }
-        return { key: k, name, type: 'N', length: Math.min(19, len), decimals: dec };
+        for (const r of rows) { const v = r[k]; if (v !== undefined && v !== null && v !== '') len = Math.max(len, numericText(v, dec).length); }
+        if (len <= 19) return { key: k, name, type: 'N', length: len, decimals: dec };
       }
       return { key: k, name, type: 'C', length: Math.min(254, Math.max(1, maxLen)), decimals: 0 };
     });
   }
 
+  function numericText(value, decimals) {
+    const [integer, fraction = ''] = String(value).split('.');
+    return integer + (decimals ? '.' + fraction.padEnd(decimals, '0') : '');
+  }
+
   function buildDbf(fields, rows) {
     const headerSize = 32 + 32 * fields.length + 1;
     const recSize = 1 + fields.reduce((s, f) => s + f.length, 0);
+    if (headerSize > 65535 || recSize > 65535) throw new Error('Atributos excedem o limite de tamanho do DBF');
     const buf = new ArrayBuffer(headerSize + recSize * rows.length + 1);
     const dv = new DataView(buf), u8 = new Uint8Array(buf), now = new Date();
     dv.setUint8(0, 0x03); dv.setUint8(1, now.getFullYear() - 1900); dv.setUint8(2, now.getMonth() + 1); dv.setUint8(3, now.getDate());
@@ -233,8 +273,9 @@
         const v = row[f.key];
         const empty = v === undefined || v === null || v === '';
         if (f.type === 'N') {
-          let s = empty ? '' : (f.decimals ? Number(v).toFixed(f.decimals) : String(Math.round(Number(v))));
-          s = s.padStart(f.length, ' ').slice(-f.length);
+          let s = empty ? '' : numericText(v, f.decimals);
+          if (s.length > f.length || (!empty && !NUM_RE.test(s))) throw new Error('Valor não cabe no campo DBF: ' + f.name);
+          s = s.padStart(f.length, ' ');
           u8.set(enc.encode(s), o);
         } else {
           const bytes = truncateUtf8(empty ? '' : cleanString(v), f.length);
@@ -255,7 +296,7 @@
   }
 
   function cleanProps(props, opts) {
-    const out = {};
+    const out = Object.create(null);
     for (const [k, v] of Object.entries(props || {})) {
       if (v === null || v === undefined) continue;
       if (typeof v === 'object') continue;                 // "[object Object]" do togeojson
@@ -263,7 +304,7 @@
       if (typeof v === 'boolean') { out[k] = v ? 'true' : 'false'; continue; }
       out[k] = k === 'description' ? stripHtml(v) : v;
     }
-    if ('description' in out) { out.descricao = out.description; delete out.description; }
+    if ('description' in out && !('descricao' in out)) { out.descricao = out.description; delete out.description; }
     return out;
   }
 
@@ -284,15 +325,21 @@
     const { items, skipped } = normalize(geojson);
     if (!items.length) throw new Error('Nenhuma geometria válida encontrada');
 
-    const files = [], layers = [];
+    const files = [], layers = [], warnings = [];
     const emit = (suffix, writer, rows) => {
       const name = baseName + suffix;
       const fields = inferFields(rows);
+      for (const f of fields) {
+        if (f.type === 'C' && rows.some(r => r[f.key] != null && enc.encode(cleanString(r[f.key])).length > f.length)) {
+          warnings.push(`${name}: o campo ${f.key} foi limitado a ${f.length} bytes no DBF`);
+        }
+      }
       const { shp, shx } = writer.build();
       files.push({ name: name + '.shp', data: shp }, { name: name + '.shx', data: shx },
         { name: name + '.dbf', data: buildDbf(fields, rows) },
         { name: name + '.prj', data: WGS84_PRJ }, { name: name + '.cpg', data: 'UTF-8' });
-      layers.push({ name, records: writer.count, fields: fields.map(f => f.name) });
+      layers.push({ name, records: writer.count, fields: fields.map(f => f.name),
+        fieldMapping: fields.map(f => ({ original: f.key, dbf: f.name, type: f.type, bytes: f.length })) });
     };
     const props = it => cleanProps(it.properties, opts);
     const single = () => ({ name: baseName });
@@ -313,7 +360,12 @@
       if (opts.mode === 'single') {
         add(w, list.flatMap(i => i[partsKey])); rows.push(single());
       } else if (opts.mode === 'feature') {
-        for (const i of list) { add(w, i[partsKey]); rows.push(props(i)); }
+        const groups = new Map();
+        for (const i of list) {
+          if (!groups.has(i.featureId)) groups.set(i.featureId, { item: i, parts: [] });
+          groups.get(i.featureId).parts.push(...i[partsKey]);
+        }
+        for (const group of groups.values()) { add(w, group.parts); rows.push(props(group.item)); }
       } else {
         for (const i of list) for (const part of i[partsKey]) { add(w, [part]); rows.push(props(i)); }
       }
@@ -322,7 +374,7 @@
     grouped('line', 'lines', SHP_POLYLINE, (w, p) => w.addPolyLine(p), '_linhas');
     grouped('polygon', 'polys', SHP_POLYGON, (w, p) => w.addPolygon(p), '_poligonos');
 
-    return { files, layers, skipped };
+    return { files, layers, skipped, warnings };
   }
 
   return { convert, normalize, countGeometries, buildDbf, inferFields, truncateUtf8, slug, ShapeWriter, MODES, WGS84_PRJ };
